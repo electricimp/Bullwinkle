@@ -30,7 +30,7 @@ class Bullwinkle
         local id = _generate_id();
 
         // Create and store the session
-        _sessions[id] <- Bullwinkle_Session(this, id, _timeout, _retries);
+        _sessions[id] <- Bullwinkle.Session(this, id, _timeout, _retries);
 
         return _sessions[id].send("send", command, params);
     }
@@ -43,7 +43,7 @@ class Bullwinkle
         local id = _generate_id();
 
         // Create and store the session
-        _sessions[id] <- Bullwinkle_Session(this, id, _timeout, _retries);
+        _sessions[id] <- Bullwinkle.Session(this, id, _timeout, _retries);
 
         // Send it
         return _sessions[id].send("ping");
@@ -161,7 +161,7 @@ class Bullwinkle
                 local cmdKey = Bullwinkle._getCmdKey(context.command);
 
                 // Immediately ack the message
-                local response = { type = "ack", id = id, time = Bullwinkle_Session._timestamp() };
+                local response = { type = "ack", id = id, time = Bullwinkle.Session._timestamp() };
                 if (!_handlers.receive && !_handlers[cmdKey]) {
                     response.type = "nack";
                 }
@@ -172,7 +172,7 @@ class Bullwinkle
                     try {
                         // Prepare a reply function for shipping a reply back to the sender
                         context.reply <- function (reply) {
-                            local response = { type = "reply", id = id, time = Bullwinkle_Session._timestamp() };
+                            local response = { type = "reply", id = id, time = Bullwinkle.Session._timestamp() };
                             response.reply <- reply;
                             _partner.send(BULLWINKLE, response);
                         }.bindenv(this);
@@ -185,7 +185,7 @@ class Bullwinkle
                         }
                     } catch (e) {
                         // An unhandled exception should be sent back to the sender
-                        local response = { type = "exception", id = id, time = Bullwinkle_Session._timestamp() };
+                        local response = { type = "exception", id = id, time = Bullwinkle.Session._timestamp() };
                         response.exception <- e;
                         _partner.send(BULLWINKLE, response);
                     }
@@ -223,7 +223,7 @@ class Bullwinkle
 }
 
 // -----------------------------------------------------------------------------
-class Bullwinkle_Session
+class Bullwinkle.Session
 {
     _handlers = null;
     _parent = null;
