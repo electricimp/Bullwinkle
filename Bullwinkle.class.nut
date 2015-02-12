@@ -1,6 +1,6 @@
-// -----------------------------------------------------------------------------
-class Bullwinkle
-{
+class Bullwinkle {
+    static BULLWINKLE = "bullwinkle";
+
     _handlers = null;
     _sessions = null;
     _partner  = null;
@@ -8,11 +8,7 @@ class Bullwinkle
     _timeout  = 10;
     _retries  = 1;
 
-
-    // .........................................................................
     constructor() {
-        const BULLWINKLE = "bullwinkle";
-
         _handlers = { timeout = null, receive = null };
         _partner  = is_agent() ? device : agent;
         _sessions = { };
@@ -22,10 +18,7 @@ class Bullwinkle
         _partner.on(BULLWINKLE, _receive.bindenv(this));
     }
 
-
-    // .........................................................................
     function send(command, params = null) {
-
         // Generate an unique id
         local id = _generate_id();
 
@@ -35,8 +28,6 @@ class Bullwinkle
         return _sessions[id].send("send", command, params);
     }
 
-
-    // .........................................................................
     function ping() {
 
         // Generate an unique id
@@ -49,18 +40,14 @@ class Bullwinkle
         return _sessions[id].send("ping");
     }
 
-
-    // .........................................................................
     function is_agent() {
         return (imp.environment() == ENVIRONMENT_AGENT);
     }
 
-    // .........................................................................
     static function _getCmdKey(cmd) {
         return BULLWINKLE + "_" + cmd;
     }
 
-    // .........................................................................
     function on(command, callback) {
         local cmdKey = Bullwinkle._getCmdKey(command);
 
@@ -70,32 +57,24 @@ class Bullwinkle
             _handlers[cmdKey] <- callback
         }
     }
-    // .........................................................................
+
     function onreceive(callback) {
         _handlers.receive <- callback;
     }
 
-
-    // .........................................................................
     function ontimeout(callback, timeout = null) {
         _handlers.timeout <- callback;
         if (timeout != null) _timeout = timeout;
     }
 
-
-    // .........................................................................
     function set_timeout(timeout) {
         _timeout = timeout;
     }
 
-
-    // .........................................................................
     function set_retries(retries) {
         _retries = retries;
     }
 
-
-    // .........................................................................
     function _generate_id() {
         // Generate an unique id
         local id = null;
@@ -105,9 +84,7 @@ class Bullwinkle
         return id;
     }
 
-    // .........................................................................
     function _is_unique(context) {
-
         // Clean out old id's from the history
         local now = time();
         foreach (id,t in _history) {
@@ -126,7 +103,6 @@ class Bullwinkle
         }
     }
 
-    // .........................................................................
     function _clone_context(ocontext) {
         local context = {};
         foreach (k,v in ocontext) {
@@ -142,16 +118,12 @@ class Bullwinkle
         return context;
     }
 
-
-    // .........................................................................
     function _end_session(id) {
         if (id in _sessions) {
             delete _sessions[id];
         }
     }
 
-
-    // .........................................................................
     function _receive(context) {
         local id = context.id;
         switch (context.type) {
@@ -222,7 +194,6 @@ class Bullwinkle
 
 }
 
-// -----------------------------------------------------------------------------
 class Bullwinkle.Session
 {
     _handlers = null;
@@ -233,7 +204,6 @@ class Bullwinkle.Session
     _acked = false;
     _retries = null;
 
-    // .........................................................................
     constructor(parent, id, timeout = 0, retries = 1) {
         _handlers = { ack = null, reply = null, timeout = null, exception = null };
         _parent = parent;
@@ -242,31 +212,26 @@ class Bullwinkle.Session
         _context = { time = _timestamp(), id = id };
     }
 
-    // .........................................................................
     function onack(callback) {
         _handlers.ack = callback;
         return this;
     }
 
-    // .........................................................................
     function onreply(callback) {
         _handlers.reply = callback;
         return this;
     }
 
-    // .........................................................................
     function ontimeout(callback) {
         _handlers.timeout = callback;
         return this;
     }
 
-    // .........................................................................
     function onexception(callback) {
         _handlers.exception = callback;
         return this;
     }
 
-    // .........................................................................
     function send(type = "resend", command = null, params = null) {
 
         _retries--;
@@ -283,7 +248,6 @@ class Bullwinkle.Session
         return this;
     }
 
-    // .........................................................................
     function _set_timer(timeout) {
 
         // Stop any current timers
@@ -293,7 +257,6 @@ class Bullwinkle.Session
         _timer = imp.wakeup(_timeout, _ontimeout.bindenv(this));
     }
 
-    // .........................................................................
     function _ontimeout() {
 
         // Close down the timer and session
@@ -320,13 +283,11 @@ class Bullwinkle.Session
         }
     }
 
-    // .........................................................................
     function _stop_timer() {
         if (_timer) imp.cancelwakeup(_timer);
         _timer = null;
     }
 
-    // .........................................................................
     function _timestamp() {
         if (Bullwinkle.is_agent()) {
             local d = date();
@@ -337,8 +298,6 @@ class Bullwinkle.Session
         }
     }
 
-
-    // .........................................................................
     function _timestamp_diff(ts0, ts1) {
         // server.log(ts0 + " > " + ts1)
         local t0 = split(ts0, ".");
@@ -347,8 +306,6 @@ class Bullwinkle.Session
         return math.fabs(diff);
     }
 
-
-    // .........................................................................
     function _ack(context) {
         // Restart the timeout timer
         _set_timer(_timeout);
@@ -364,8 +321,6 @@ class Bullwinkle.Session
 
     }
 
-
-    // .........................................................................
     function _reply(context) {
         // We can stop the timeout timer now
         _stop_timer();
@@ -380,8 +335,6 @@ class Bullwinkle.Session
         _parent._end_session(_context.id)
     }
 
-
-    // .........................................................................
     function _exception(context) {
         // We can stop the timeout timer now
         _stop_timer();
@@ -395,11 +348,4 @@ class Bullwinkle.Session
         // Remove the history of this message
         _parent._end_session(_context.id)
     }
-
 }
-
-// ==============================[ Sample code ]================================
-
-bullwinkle <- Bullwinkle();
-bullwinkle.set_timeout(5);
-bullwinkle.set_retries(3);
