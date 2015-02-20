@@ -6,7 +6,7 @@ Bullwinkle is a [Squirrel](http://squirrel-lang.org)/[Electric Imp](http://elect
 ## Instantiating the class
 Create Bullwinkle objects in both the agent *and* the device:
 
-```
+```squirrel
 bullwinkle <- Bullwinkle();	// create bullwinkle object
 bullwinkle.set_timeout(5);	// set default timeout (seconds)
 bullwinkle.set_retries(3);	// set default number of retries
@@ -16,7 +16,7 @@ bullwinkle.set_retries(3);	// set default number of retries
 
 You can send data with bullwinkle in the same way you would *agent.send* or *device.send*. The .send() function will return a Bullwinkle.Session object that you can attach multiple handlers to: *.ontimeout(context)*, *.onexception(context)*, *.onreply(context)*.
 
-```
+```squirrel
 bullwinkle.send("temperatureData", temp)
     .onreply(function(context) {
     	// this function executes if the receiver calls 'context.reply(reply)'
@@ -36,7 +36,7 @@ bullwinkle.send("temperatureData", temp)
 
 Create a callback function for a specific command. The callback function takes a single parameter - context - which contains the commandName and data from the device/agent (as well as internal information used by bullwinkle). The context object can also be used to send a reply to the sender, which will trigger the sender's *.onreply(context)* function (if it exists):
 
-```
+```squirrel
 bullwinkle.on("temperatureData", function(context) {
 	// pull out the data:
 	local data = context.params;
