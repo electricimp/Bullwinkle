@@ -19,7 +19,7 @@ class Bullwinkle {
         _history  = { };
 
         // Incoming message handler
-        _partner.on(BULLWINKLE, _receive.bindenv(this));
+        _partner.on(Bullwinkle.BULLWINKLE, _receive.bindenv(this));
     }
 
     function send(command, params = null) {
@@ -49,7 +49,7 @@ class Bullwinkle {
     }
 
     static function _getCmdKey(cmd) {
-        return BULLWINKLE + "_" + cmd;
+        return Bullwinkle.BULLWINKLE + "_" + cmd;
     }
 
     function on(command, callback) {
@@ -141,7 +141,7 @@ class Bullwinkle {
                 if (!_handlers.receive && !_handlers[cmdKey]) {
                     response.type = "nack";
                 }
-                _partner.send(BULLWINKLE, response);
+                _partner.send(Bullwinkle.BULLWINKLE, response);
 
                 // Then handed on to the callback
                 if (context.type == "send" && (_handlers.receive || _handlers[cmdKey]) && _is_unique(context)) {
@@ -150,7 +150,7 @@ class Bullwinkle {
                         context.reply <- function (reply) {
                             local response = { type = "reply", id = id, time = Bullwinkle.Session._timestamp() };
                             response.reply <- reply;
-                            _partner.send(BULLWINKLE, response);
+                            _partner.send(Bullwinkle.BULLWINKLE, response);
                         }.bindenv(this);
 
                         // Fire the callback
@@ -163,7 +163,7 @@ class Bullwinkle {
                         // An unhandled exception should be sent back to the sender
                         local response = { type = "exception", id = id, time = Bullwinkle.Session._timestamp() };
                         response.exception <- e;
-                        _partner.send(BULLWINKLE, response);
+                        _partner.send(Bullwinkle.BULLWINKLE, response);
                     }
                 }
                 break;
@@ -198,8 +198,7 @@ class Bullwinkle {
 
 }
 
-class Bullwinkle.Session
-{
+class Bullwinkle.Session {
     _handlers = null;
     _parent = null;
     _context = null;
@@ -247,7 +246,7 @@ class Bullwinkle.Session
         }
 
         if (_timeout > 0) _set_timer(_timeout);
-        _parent._partner.send(BULLWINKLE, _context);
+        _parent._partner.send(Bullwinkle.BULLWINKLE, _context);
 
         return this;
     }
