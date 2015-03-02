@@ -18,7 +18,7 @@ bullwinkle.set_retries(3)     // set default number of retries
 
 ### send(*commandName*, *data*)
 
-You can send data with Bullwinkle in the same way you would [**agent.send()**](http://electricimp.com/docs/api/agent/send) or [**device.send()**](http://electricimp.com/docs/api/device/send). The *send()* method will return a Bullwinkle.Session object that you can attach multiple handlers to: *.ontimeout()*, *.onexception()* and *.onreply()*.
+You can send data with Bullwinkle in the same way you would [**agent.send()**](http://electricimp.com/docs/api/agent/send) or [**device.send()**](http://electricimp.com/docs/api/device/send). The *send()* method will return a Bullwinkle.Session object that you can attach multiple handlers to: *ontimeout()*, *onexception()* and *onreply()*.
 
 ```squirrel
 bullwinkle.send("temperatureData", temp)
