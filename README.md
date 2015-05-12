@@ -2,6 +2,8 @@
 
 Bullwinkle is a [Squirrel](http://squirrel-lang.org)/[Electric Imp](http://electricimp.com) framework designed to extend agent and device communication. It allows developers to send and receive messages in a similar way to the built in [**agent.send()**](http://electricimp.com/docs/api/agent/send)/[**device.on()**](http://electricimp.com/docs/api/device/on) and [**device.send()**](http://electricimp.com/docs/api/device/send)/[**agent.on()**](http://electricimp.com/docs/api/agent/on) methods, but adds timeouts, retries and responses.
 
+**To add this library to your project, add** `#require "Bullwinkle.class.nut:1.0.0"` **to the top of your device and/or agent code**
+
 ## Usage
 
 ### Constructor
