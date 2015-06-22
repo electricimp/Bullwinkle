@@ -2,25 +2,27 @@
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
-- [Bullwinkle](#bullwinkle) - The core application - used to add and remove message handlers, and send messages.
+- [Bullwinkle](#bullwinkle) - The core application - used to add/remove handlers, and send messages.
   - [Bullwinkle.send](#bullwinkle_send) - Sends a message to the partner application.
   - [Bullwinkle.on](#bullwinkle_on) - Adds a message listener for the specified messageName.
     - [reply](#bullwinkle_on_reply) - A method passed into .on handlers that is used to reply to the message.
   - [Bullwinkle.remove](#bullwinkle_remove) - Removes a message listener for the specified messageName.
 - [Bullwinkle.Package](#package) - A packaged message with event handlers.
-  - [Bullwinkle.Package.onReply](#package_onreply) - Adds an onReply handler that will be invoked send was responded to.
-  - [Bullwinkle.Package.onFail](#package_onfail) - Adds an onFail handler that will be invoked if the send failed.
+  - [Package.onReply](#package_onreply) - Adds a handler that will be invoked if the message is replied to.
+  - [Package.onFail](#package_onfail) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#package_onfail_retry) - A method passed into .onFail handlers that is used to retry sending the message.
 
 <div id="bullwinkle"><h2>Bullwinkle([options])</h2></div>
 
-Calling the Bullwinkle constructor creates a new Bullwiunkle application. You must `require` and instantiate Bullwinkle in both the agent and device code. An optional *options* table can be passed into the constructor to override default behaviours:
+Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours:
 
 ```squirrel
 #require "bullwinkle.class.nut:2.0.0"
 
 bull <- Bullwinkle();
 ```
+
+**NOTE:** You must `require` and instantiate Bullwinkle in both the agent and device code.
 
 <div id="bullwinkle_options"><h4>options</h4></div>
 A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behaviour:
@@ -45,7 +47,7 @@ Sends a named message to the partner's Bullwinkle application, and returns a [Bu
 bull.send("setLights", true);   // Turn the lights on
 ```
 
-See Bullwinkle.Package for infomation about [onFail](#package_onfail) and [onReply](#package_onreply) handlers.
+The send method returns a [Bullwinkle.Package](#package) object that can be used to attach [onFail](#package_onfail) and [onReply](#package_onreply) handlers.
 
 <div id="bullwinkle_on"><h3>on(messageName, callback)</h3></div>
 
@@ -117,9 +119,9 @@ i2c <- hardware.i2c89;
 i2c.configure(CLOCK_SPEED_400_KHZ);
 tempHumid <- Si702x(i2c);
 
-bull.on("getData", function(package){
+bull.on("getData", function(message, reply){
     local result = tempHumid.read();
-    package.reply(result)
+    reply(result)
 });
 ```
 

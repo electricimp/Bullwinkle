@@ -1,6 +1,7 @@
 #require "Bullwinkle.class.nut:1.0.0"
 #require "Si702x.class.nut:1.0.0"
 
+// Create the bullwinkle application
 bull <- Bullwinkle();
 
 // Configure the Si7021 hardware
