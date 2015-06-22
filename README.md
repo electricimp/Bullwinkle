@@ -2,17 +2,15 @@
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
-- [Bullwinkle](#bullwinle) - The core application - used to add and remove message handlers, and send messages.
+- [Bullwinkle](#bullwinkle) - The core application - used to add and remove message handlers, and send messages.
   - [Bullwinkle.send](#bullwinkle_send) - Sends a message to the partner application.
-  - [Bullwinkle.on](#bullwinlke_on) - Adds a message listener for the specified messageName.
+  - [Bullwinkle.on](#bullwinkle_on) - Adds a message listener for the specified messageName.
     - [reply](#bullwinkle_on_reply) - A method passed into .on handlers that is used to reply to the message.
   - [Bullwinkle.remove](#bullwinkle_remove) - Removes a message listener for the specified messageName.
 - [Bullwinkle.Package](#package) - A packaged message with event handlers.
-  - [Bullwinkle.Package.onReply](#package_onreply) - Adds an onReply handler that will be invoked if the partner handler replies to the message.
-  - [Bullwinkle.Package.onFail](#package_onfail) - Adds an onFail handler that will be invoked if the partner application does not have a handler for the specified messageName, or if the partner application fails to respond within a specified period of time([messageTimeout](#bullwinkle_options)).
-    - [rety](#package_onfail_retry) - A method passed into .onFail handlers that is used to retry sending the message.
-
-The Bull
+  - [Bullwinkle.Package.onReply](#package_onreply) - Adds an onReply handler that will be invoked send was responded to.
+  - [Bullwinkle.Package.onFail](#package_onfail) - Adds an onFail handler that will be invoked if the send failed.
+    - [retry](#package_onfail_retry) - A method passed into .onFail handlers that is used to retry sending the message.
 
 <div id="bullwinkle"><h2>Bullwinkle([options])</h2></div>
 
