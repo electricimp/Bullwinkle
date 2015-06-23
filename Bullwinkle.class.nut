@@ -36,13 +36,17 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout": ("messageTimeout" in settings) ? settings["messageTimeout"] : 10,
-            "retryTimeout": ("retryTimeout" in settings) ? settings["retryTimeout"] : 60
+            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"] : 10,
+            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"] : 60
         };
 
-        // Initialize properties
+        // Initialize out message handlers
         _handlers = {};
+
+        // Initialize list of packages
         _packages = {};
+
+        // Initialize the ID counter
         _nextId = 0;
 
         // Setup the agent/device.on handler
@@ -56,10 +60,10 @@ class Bullwinkle {
     // Adds a message handler to the Bullwinkle instance
     //
     // Parameters:
-    //      name        The name we're listening for
-    //      callback    The message handler (1 parameter)
+    //      name            The name we're listening for
+    //      callback        The message handler (1 parameter)
     //
-    // Returns:         this
+    // Returns:             this
     function on(name, callback) {
         _handlers[name] <- callback;
         return this;
@@ -68,9 +72,9 @@ class Bullwinkle {
     // Removes a message handler from the Bullwinkle instance
     //
     // Parameters:
-    //      name        The name we're removing the handler for
+    //      name            The name we're removing the handler for
     //
-    // Returns:         this
+    // Returns:             this
     function remove(name) {
         if (name in _handlers) { delete _handlers[name]; }
         return this;
@@ -79,10 +83,10 @@ class Bullwinkle {
     // Sends a bullwinkle message
     //
     // Parameters:
-    //      name        The name
-    //      data        Optional data message
+    //      name            The message name
+    //      data            Optional data
     //
-    // Returns:         Rocky.Package object
+    // Returns:             Rocky.Package object
     function send(name, data = null) {
         local message = _messageFactory(Bullwinkle.SEND, name, data);
         local package = Bullwinkle.Package(message);
@@ -93,31 +97,11 @@ class Bullwinkle {
     }
 
     //-------------------- PRIVATE METHODS --------------------//
-    // Builds Bullwinkle context objects / data message
-    //
-    // Parameters:
-    //      type        Bullwinkle.SEND, Bullwinkle.REPLY, Bullwinkle.ACK, Bullwinkle.NACK
-    //      name        The message name
-    //      data        Optional data
-    //      ts          The timestamp (or null to autogenerate as now)
-    //
-    // Returns:         Table with all the information packed up
-    function _messageFactory(type, command, data, ts = null) {
-        if (ts == null) { ts = time() };
-
-        return {
-            "id": _generateId(),
-            "type": type,
-            "name": command,
-            "data": data
-            "ts": ts
-        };
-    }
 
     // _isAgent is used to determine if we're an agent or device instance
     //
-    // Returns:         true: if we're an agent
-    //                  false: if we're a device
+    // Returns:             true: if we're an agent
+    //                      false: if we're a device
     function _isAgent() {
         return imp.environment() == ENVIRONMENT_AGENT;
     }
@@ -135,12 +119,33 @@ class Bullwinkle {
         return _nextId;
     }
 
+    // Builds Bullwinkle context objects / data message
+    //
+    // Parameters:
+    //      type            Bullwinkle.SEND, Bullwinkle.REPLY, Bullwinkle.ACK, Bullwinkle.NACK
+    //      name            The message name
+    //      data            Optional data
+    //      ts              The timestamp (or null to autogenerate as now)
+    //
+    // Returns:             Table with all the information packed up
+    function _messageFactory(type, command, data, ts = null) {
+        if (ts == null) { ts = time() };
+
+        return {
+            "id": _generateId(),
+            "type": type,
+            "name": command,
+            "data": data
+            "ts": ts
+        };
+    }
+
     // Sends a prebuild message
     //
     // Parameters:
-    //      message     The message to send
+    //      message         The message to send
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _sendMessage(message) {
         _partner.send(Bullwinkle.BULLWINKLE, message);
     }
@@ -148,10 +153,10 @@ class Bullwinkle {
     // Sends a response (ACK, NACK, REPLY) to a message
     //
     // Parameters:
-    //      data        The bullwinkle message to respond to
-    //      state       The new state
+    //      data            The bullwinkle message to respond to
+    //      state           The new state
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _respond(message, state) {
         message.type = state;
         _sendMessage(message);
@@ -160,9 +165,9 @@ class Bullwinkle {
     // _onRecieve is the agent/device.on handler for all bullwinkle message
     //
     // Parameters:
-    //      data        A bullwinkle message (created by Bullwinkle._messageFactory)
+    //      data            A bullwinkle message (created by Bullwinkle._messageFactory)
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _onReceive(data) {
         switch (data.type) {
             case Bullwinkle.SEND:
@@ -183,9 +188,9 @@ class Bullwinkle {
     // Processes a SEND messages
     //
     // Parameters:
-    //      message     The message we're processing
+    //      message         The message we're processing
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _sendHandler(message) {
         // If we don't have a handler, send a NACK
         if (!(message.name in _handlers)) {
@@ -207,9 +212,9 @@ class Bullwinkle {
     // Processes a REPLY messages
     //
     // Parameters:
-    //      message     The message we're processing
+    //      message         The message we're processing
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _replyHandler(message) {
         // If we don't have a session for this id, we're done
         if (!(message.id in _packages)) return;
@@ -222,8 +227,8 @@ class Bullwinkle {
         if (handler != null) {
             // Invoke the handler and delete the package when done
             imp.wakeup(0, function() {
-                handler(message);
                 delete __bull._packages[message.id];
+                handler(message);
             });
         } else {
             // If we don't have a handler, delete the package (we're done)
@@ -234,9 +239,9 @@ class Bullwinkle {
     // Processes an ACK messages
     //
     // Parameters:
-    //      message     The message we're processing
+    //      message         The message we're processing
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _ackHandler(message) {
         // If we don't have a session for this id, we're done
         if (!(message.id in _packages)) return;
@@ -253,9 +258,9 @@ class Bullwinkle {
     // Processes a NACK messages
     //
     // Parameters:
-    //      message     The message we're processing
+    //      message         The message we're processing
     //
-    // Returns:         nothing
+    // Returns:             nothing
     function _nackHandler(message) {
         // If we don't have a session for this id, we're done
         if (!(message.id in _packages)) return;
@@ -287,9 +292,9 @@ class Bullwinkle {
     // Create a reply method for a .on handler
     //
     // Parameters:
-    //      message     The message we're replying to
+    //      message         The message we're replying to
     //
-    // Returns:         A callback that when invoked, will send a reply
+    // Returns:             A callback that when invoked, will send a reply
     function _replyFactory(message) {
         return function(data = null) {
             // Set the type and data
@@ -303,9 +308,9 @@ class Bullwinkle {
     // Create a retry method for a .onFail handler
     //
     // Parameters:
-    //      message     The message we're retrying
+    //      message         The message we're retrying
     //
-    // Returns:         A callback that when invoked, will send a retry
+    // Returns:             A callback that when invoked, will send a retry
     function _retryFactory(message) {
         return function(timeout = null) {
             // Set timeout if required
