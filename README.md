@@ -119,7 +119,7 @@ i2c <- hardware.i2c89;
 i2c.configure(CLOCK_SPEED_400_KHZ);
 tempHumid <- Si702x(i2c);
 
-bull.on("getData", function(message, reply){
+bull.on("temp", function(message, reply){
     local result = tempHumid.read();
     reply(result)
 });
@@ -127,13 +127,13 @@ bull.on("getData", function(message, reply){
 
 <div id="package_onfail"><h3>onFail(callback)</h3></div>
 
-The onFail method adds an event listent (the *callback*) that will  execute if the partner application does not have a handler for the specified messageName, or if the partner fails to respond within a specified period of time (the [messageTimeout](#bullwinkle_options)). The callback method requires three parameters: *err*, *message*, and *retry*.
+The onFail method adds an event listener (the *callback*) that will  execute if the partner application does not have a handler for the specified messageName, or if the partner fails to respond within a specified period of time (the [messageTimeout](#bullwinkle_options)). The callback method requires three parameters: *err*, *message*, and *retry*.
 
-The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does have a handler for the specified messageName), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
+The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does not have a handler for the specified messageName), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
 The *message* parameter contains the failed message.
 
-The *retry* parameter is a method that can be invoked the retry sending the message in a specified period of time.
+The *retry* parameter is a method that can be invoked to retry sending the message in a specified period of time.
 
 ```squirrel
 bull.send("importantMessage")
