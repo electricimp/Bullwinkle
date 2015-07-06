@@ -33,9 +33,9 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 The default settings are listed below:
 
 ```squirrel
-defaults <- {
-    messageTimeout = 10.0,  // If there is no response from a message in 10 seconds, consider it failed
-    retryTimeout = 60.0     // Calling package.retry() with no parameter will retry in 60 seconds
+{
+    "messageTimeout": 10.0,  // If there is no response from a message in 10 seconds, consider it failed
+    "retryTimeout": 60.0     // Calling package.retry() with no parameter will retry in 60 seconds
 }
 ```
 
