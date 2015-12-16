@@ -17,7 +17,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
 Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours:
 
 ```squirrel
-#require "bullwinkle.class.nut:2.0.0"
+#require "bullwinkle.class.nut:2.0.1"
 
 bull <- Bullwinkle();
 ```
