@@ -3,7 +3,7 @@
 // http://opensource.org/licenses/MIT
 
 class Bullwinkle {
-    static version = [2,0,0];
+    static version = [2,0,1];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -271,6 +271,7 @@ class Bullwinkle {
 
         // If we don't have a handler, delete the package (we're done)
         if (handler == null) {
+            server.error("Received NACK from Bullwinkle.send(\"" + message.name + "\", ...)");
             delete _packages[message.id];
             return;
         }
