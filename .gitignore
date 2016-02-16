@@ -1,0 +1,4 @@
+
+# Ignore the wrench files
+settings.wrench
+.build_api_key

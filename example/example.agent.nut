@@ -1,5 +1,5 @@
 #require "Rocky.class.nut:1.2.0"
-#require "Bullwinkle.class.nut:2.0.0"
+#require "Bullwinkle.class.nut:2.1.0"
 
 // Create the Rocky application
 app <- Rocky();
