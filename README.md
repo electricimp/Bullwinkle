@@ -44,7 +44,7 @@ The default settings are listed below:
 
 <div id="bullwinkle_send"><h3>send(messageName, [data])</h3></div>
 
-Sends a named message to the partner's Bullwinkle application, and returns a [Bullwinkle.Package](#package). The *data* parameter can be a basic Squirrel type (`1`, `true`, `"A String"`) or more complex data structures such as an array or table.
+Sends a named message to the partner's Bullwinkle application, and returns a [Bullwinkle.Package](#package). The *data* parameter can be [any serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
 
 ```squirrel
 bull.send("setLights", true);   // Turn the lights on
@@ -65,7 +65,7 @@ bull.on("setLights", function(message, reply) {
 
 <div id="bullwinkle_on_reply"><h4>reply(data)</h4></div>
 
-The second parameter, *reply*, is a method that can be invoked to reply to the message caught by the .on handler. The reply method takes a parameter - *data* - representing the information we want to pass back to the partner. The *data* parameter can be a basic Squirrel type (`1`, `true`, `"A String"`) or more complex data structures such as an array or table.
+The second parameter, *reply*, is a method that can be invoked to reply to the message caught by the .on handler. The reply method takes a parameter - *data* - representing the information we want to pass back to the partner. The *data* parameter can be [any serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
 
 ```squirrel
 // Get a message, and respond to it
