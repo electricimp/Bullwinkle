@@ -1,4 +1,4 @@
-# Bullwinkle Framework v2.1.0
+# Bullwinkle Framework v2.2.0
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
@@ -18,7 +18,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
 Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours:
 
 ```squirrel
-#require "bullwinkle.class.nut:2.1.0"
+#require "bullwinkle.class.nut:2.2.0"
 
 bull <- Bullwinkle();
 ```
@@ -93,6 +93,7 @@ A Bullwinkle.Package object represents a message that has been sent to the partn
 <div id="onsuccesscallback"><h3>onSuccess(callback)</h3></div>
 
 The onSuccess method adds an event listener (the *callback*) that will execute if the partner *.on* handler receives the message.
+The *message* parameter contains the successfully delivered message including a *tries* count and a round-trip *latency* float in seconds.
 
 ```squirrel
 bull.send("importantMessage")
@@ -106,14 +107,14 @@ bull.send("importantMessage")
 
 <div id="onreplycallback"><h3>onReply(callback)</h3></div>
 
-The onReply method adds an event listener (the *callback*) that will execute if the partner *.on* handler replies to the message with the [reply](#bullwinkle_on_reply) method. The callback takes a single parameter, *message*, which contains the message information.
+The onReply method adds an event listener (the *callback*) that will execute if the partner *.on* handler replies to the message with the [reply](#bullwinkle_on_reply) method. The callback takes a single parameter, *message*, which contains the message information including a *tries* count and a round-trip *latency* float in seconds.
 
 The following example demonstrates how to get real time sensor information with [Rocky](https://github.com/electricimp/rocky) and Bullwinkle:
 
 ```squirrel
 // Agent Code
 #require "Rocky.class.nut:1.2.0"
-#require "Bullwinkle.class.nut:2.1.0"
+#require "Bullwinkle.class.nut:2.2.0"
 
 app <- Rocky();
 bull <- Bullwinkle();
@@ -128,7 +129,7 @@ app.get("/data", function(context) {
 ```squirrel
 // Device Code
 #require "Si702x.class.nut:1.0.0"
-#require "Bullwinkle.class.nut:1.0.0"
+#require "Bullwinkle.class.nut:2.2.0"
 
 bull <- Bullwinkle();
 
@@ -148,7 +149,7 @@ The onFail method adds an event listener (the *callback*) that will  execute if 
 
 The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does not have a handler for the specified messageName), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
-The *message* parameter contains the failed message including a *tries* count.
+The *message* parameter contains the failed message including a *tries* count and a *latency* float in seconds.
 
 The *retry* parameter is a method that can be invoked to retry sending the message in a specified period of time. Note, this method must be called synchronously if it is to be called at all. If the *retry* method is not called the message will be expired.
 

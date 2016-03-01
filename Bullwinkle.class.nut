@@ -19,7 +19,7 @@ const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
 
 
 class Bullwinkle {
-    static version = [2,1,0];
+    static version = [2,2,0];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -175,7 +175,7 @@ class Bullwinkle {
         _sendMessage(message);
     }
 
-    // _onRecieve is the agent/device.on handler for all bullwinkle message
+    // _onReceive is the agent/device.on handler for all bullwinkle message
     //
     // Parameters:
     //      data            A bullwinkle message (created by Bullwinkle._messageFactory)
@@ -234,13 +234,16 @@ class Bullwinkle {
 
         // Check if there's a reply handler
         local __bull = this;
+        local latency = _packages[message.id].getLatency();
         local handler = _packages[message.id].getHandler("onReply");
 
         // If the handler is there:
         if (handler != null) {
+
             // Invoke the handler and delete the package when done
             imp.wakeup(0, function() {
                 delete __bull._packages[message.id];
+                message.latency <- latency;
                 handler(message);
             });
         } else {
@@ -260,12 +263,15 @@ class Bullwinkle {
         if (!(message.id in _packages)) return;
 
         // Check if there's a success handler
+        local latency = _packages[message.id].getLatency();
         local handler = _packages[message.id].getHandler("onSuccess");
 
         // If the handler is there:
         if (handler != null) {
+
             // Invoke the handler 
             imp.wakeup(0, function() {
+                message.latency <- latency;
                 handler(message);
             });
         }
@@ -436,11 +442,15 @@ class Bullwinkle {
 }
 
 class Bullwinkle.Package {
+
     // The event handlers
     _handlers = null;
 
     // The message we're wrapping
     _message = null;
+
+    // The timestamp of the original message
+    _ts = null;
 
     // Class constructor
     //
@@ -449,6 +459,7 @@ class Bullwinkle.Package {
     constructor(message) {
         _message = message;
         _handlers = {};
+        _ts = _timestamp();
     }
 
     // Sets an onSuccess callback that will be invoked if the message is successfully
@@ -496,4 +507,32 @@ class Bullwinkle.Package {
     function getHandler(handlerName) {
         return (handlerName in _handlers) ? _handlers[handlerName] : null;
     }
+
+    // Returns the time since the message was sent
+    //
+    // Parameters:
+    //
+    // Returns:         The time difference in seconds (float) between the packages timestamp and now()
+    function getLatency() {
+        local t0 = split(_ts, ".");
+        local t1 = split(_timestamp(), ".");
+        local diff = (t1[0].tointeger() - t0[0].tointeger()) + (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+        return math.fabs(diff);
+    }
+
+    // Returns the time in a string format that can be used for calculating latency
+    //
+    // Parameters:
+    //
+    // Returns:             The time in a string format
+    function _timestamp() {
+        if (Bullwinkle._isAgent()) {
+            local d = date();
+            return format("%d.%06d", d.time, d.usec);
+        } else {
+            local d = math.abs(hardware.micros());
+            return format("%d.%06d", d/1000000, d%1000000);
+        }
+    }
+
 }
