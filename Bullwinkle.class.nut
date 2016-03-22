@@ -5,8 +5,8 @@
 
 // Message Types
 enum BULLWINKLE_MESSAGE_TYPE {
-    SEND, 
-    REPLY, 
+    SEND,
+    REPLY,
     ACK,
     NACK,
     TIMEOUT,
@@ -269,7 +269,7 @@ class Bullwinkle {
         // If the handler is there:
         if (handler != null) {
 
-            // Invoke the handler 
+            // Invoke the handler
             imp.wakeup(0, function() {
                 message.latency <- latency;
                 handler(message);
@@ -420,7 +420,7 @@ class Bullwinkle {
                     continue;
                 }
 
-                // Grap a reference to this
+                // Grab a reference to this
                 local __bull = this;
 
                 // Build the retry method for onFail
