@@ -50,7 +50,7 @@ Sends a named message to the partner's Bullwinkle application, and returns a [Bu
 bull.send("setLights", true);   // Turn the lights on
 ```
 
-The send method returns a [Bullwinkle.Package](#package) object that can be used to attach [onFail](#onfailcallback) and [onReply](#onreplycallback) handlers.
+The send method returns a [Bullwinkle.Package](#package) object that can be used to attach [onFail](#onfailcallback),  [onSuccess](#onsuccesscallback) and [onReply](#onreplycallback) handlers.
 
 <div id="bullwinkle_on"><h3>on(messageName, callback)</h3></div>
 
