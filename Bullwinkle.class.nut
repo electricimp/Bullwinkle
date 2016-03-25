@@ -1,22 +1,28 @@
-// Copyright (c) 2015 Electric Imp
+// Copyright (c) 2015-2016 Electric Imp
 // This file is licensed under the MIT License
 // http://opensource.org/licenses/MIT
 
+
+// Message Types
+enum BULLWINKLE_MESSAGE_TYPE {
+    SEND,
+    REPLY,
+    ACK,
+    NACK,
+    TIMEOUT,
+    DONE
+}
+
+// Error messages
+const BULLWINKLE_ERR_NO_HANDLER = "No handler for Bullwinkle message";
+const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
+
+
 class Bullwinkle {
-    static version = [2,0,1];
+    static version = [2,2,0];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
-
-    static NO_HANDLER = "No handler for Bullwinkle message";
-    static NO_RESPONSE = "No Response from partner";
-
-    // Message Types
-    static SEND = 0;
-    static REPLY = 1;
-    static ACK = 2;
-    static NACK = 3;
-    static TIMEOUT = 4;
 
     // ID Generator
     _nextId = null;
@@ -37,7 +43,8 @@ class Bullwinkle {
         // Initialize settings
         _settings = {
             "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"] : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"] : 60
+            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"] : 60,
+            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"] : 0,
         };
 
         // Initialize out message handlers
@@ -51,7 +58,7 @@ class Bullwinkle {
 
         // Setup the agent/device.on handler
         _partner = _isAgent() ? device : agent;
-        _partner.on(Bullwinkle.BULLWINKLE, _onReceive.bindenv(this));
+        _partner.on(BULLWINKLE, _onReceive.bindenv(this));
 
         // Start the watchdog (since imp.wakeups are limited, we only use 1)
         _watchdog();
@@ -88,7 +95,7 @@ class Bullwinkle {
     //
     // Returns:             Rocky.Package object
     function send(name, data = null) {
-        local message = _messageFactory(Bullwinkle.SEND, name, data);
+        local message = _messageFactory(BULLWINKLE_MESSAGE_TYPE.SEND, name, data);
         local package = Bullwinkle.Package(message);
         _packages[message.id] <- package;
         _sendMessage(message);
@@ -122,7 +129,7 @@ class Bullwinkle {
     // Builds Bullwinkle context objects / data message
     //
     // Parameters:
-    //      type            Bullwinkle.SEND, Bullwinkle.REPLY, Bullwinkle.ACK, Bullwinkle.NACK
+    //      type            BULLWINKLE_MESSAGE_TYPE.SEND, BULLWINKLE_MESSAGE_TYPE.REPLY, BULLWINKLE_MESSAGE_TYPE.ACK, BULLWINKLE_MESSAGE_TYPE.NACK
     //      name            The message name
     //      data            Optional data
     //      ts              The timestamp (or null to autogenerate as now)
@@ -135,8 +142,9 @@ class Bullwinkle {
             "id": _generateId(),
             "type": type,
             "name": command,
-            "data": data
-            "ts": ts
+            "data": data,
+            "ts": ts,
+            "tries": 0,
         };
     }
 
@@ -147,7 +155,12 @@ class Bullwinkle {
     //
     // Returns:             nothing
     function _sendMessage(message) {
-        _partner.send(Bullwinkle.BULLWINKLE, message);
+        // Increment the tries
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND) {
+        	message.tries++;
+        }
+        // Send the message
+        _partner.send(BULLWINKLE, message);
     }
 
     // Sends a response (ACK, NACK, REPLY) to a message
@@ -162,7 +175,7 @@ class Bullwinkle {
         _sendMessage(message);
     }
 
-    // _onRecieve is the agent/device.on handler for all bullwinkle message
+    // _onReceive is the agent/device.on handler for all bullwinkle message
     //
     // Parameters:
     //      data            A bullwinkle message (created by Bullwinkle._messageFactory)
@@ -170,16 +183,16 @@ class Bullwinkle {
     // Returns:             nothing
     function _onReceive(data) {
         switch (data.type) {
-            case Bullwinkle.SEND:
+            case BULLWINKLE_MESSAGE_TYPE.SEND:
                 _sendHandler(data);
                 break;
-            case Bullwinkle.REPLY:
+            case BULLWINKLE_MESSAGE_TYPE.REPLY:
                 _replyHandler(data);
                 break;
-            case Bullwinkle.ACK:
+            case BULLWINKLE_MESSAGE_TYPE.ACK:
                 _ackHandler(data);
                 break;
-            case Bullwinkle.NACK:
+            case BULLWINKLE_MESSAGE_TYPE.NACK:
                 _nackHandler(data);
                 break;
         }
@@ -194,12 +207,12 @@ class Bullwinkle {
     function _sendHandler(message) {
         // If we don't have a handler, send a NACK
         if (!(message.name in _handlers)) {
-            _respond(message, Bullwinkle.NACK)
+            _respond(message, BULLWINKLE_MESSAGE_TYPE.NACK)
             return;
         }
 
         // Otherwise ACK the message
-        _respond(message, Bullwinkle.ACK);
+        _respond(message, BULLWINKLE_MESSAGE_TYPE.ACK);
 
         // Grab the handler and create a reply method
         local handler = _handlers[message.name];
@@ -221,13 +234,16 @@ class Bullwinkle {
 
         // Check if there's a reply handler
         local __bull = this;
+        local latency = _packages[message.id].getLatency();
         local handler = _packages[message.id].getHandler("onReply");
 
         // If the handler is there:
         if (handler != null) {
+
             // Invoke the handler and delete the package when done
             imp.wakeup(0, function() {
                 delete __bull._packages[message.id];
+                message.latency <- latency;
                 handler(message);
             });
         } else {
@@ -245,6 +261,20 @@ class Bullwinkle {
     function _ackHandler(message) {
         // If we don't have a session for this id, we're done
         if (!(message.id in _packages)) return;
+
+        // Check if there's a success handler
+        local latency = _packages[message.id].getLatency();
+        local handler = _packages[message.id].getHandler("onSuccess");
+
+        // If the handler is there:
+        if (handler != null) {
+
+            // Invoke the handler
+            imp.wakeup(0, function() {
+                message.latency <- latency;
+                handler(message);
+            });
+        }
 
         // Check if there's a reply handler
         local handler = _packages[message.id].getHandler("onReply");
@@ -281,11 +311,11 @@ class Bullwinkle {
 
         // Invoke the handler and delete the package when done
         imp.wakeup(0, function() {
-            handler(Bullwinkle.NO_HANDLER, message, retry);
+            handler(BULLWINKLE_ERR_NO_HANDLER, message, retry);
 
             // Delete the message if the dev didn't retry
-            if (message.type == Bullwinkle.NACK) {
-                delete __bull._packages[message.id];
+            if (message.type == BULLWINKLE_MESSAGE_TYPE.NACK) {
+            	delete __bull._packages[message.id];
             }
         });
     }
@@ -299,7 +329,7 @@ class Bullwinkle {
     function _replyFactory(message) {
         return function(data = null) {
             // Set the type and data
-            message.type = Bullwinkle.REPLY;
+            message.type = BULLWINKLE_MESSAGE_TYPE.REPLY;
             message.data = data;
             // Send the data
             this._sendMessage(message)
@@ -314,19 +344,39 @@ class Bullwinkle {
     // Returns:             A callback that when invoked, will send a retry
     function _retryFactory(message) {
         return function(timeout = null) {
+
+        	// Check the message is still valid
+            if (!(message.id in _packages)) {
+        		// server.error(format("Bullwinkle message id=%d has expired", message.id))
+				message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+        		return false;
+	        }
+
+	        // Check there are more retries available
+			if (_settings.maxRetries > 0 && message.tries >= _settings.maxRetries) {
+        		// server.error(format("Bullwinkle message id=%d has no more retries", message.id))
+				message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+				delete _packages[message.id];
+        		return false;
+			}
+
             // Set timeout if required
             if (timeout == null) { timeout = _settings.retryTimeout; }
 
             // Reset the type
-            message.type = SEND;
+            message.type = BULLWINKLE_MESSAGE_TYPE.SEND;
+
             // Add the retry information
-            message["retry"] <- {
+            message.retry <- {
                 "ts": time() + timeout,
                 "sent": false
             };
 
             // Update it's package so the _watchdog will catch it
             _packages[message.id]._message = message;
+
+            return true;
+
         }.bindenv(this);
     };
 
@@ -370,7 +420,7 @@ class Bullwinkle {
                     continue;
                 }
 
-                // Grap a reference this this
+                // Grab a reference to this
                 local __bull = this;
 
                 // Build the retry method for onFail
@@ -379,10 +429,10 @@ class Bullwinkle {
                 // Invoke the onFail handler
                 imp.wakeup(0, function() {
                     // Invoke the handlers
-                    message.type = Bullwinkle.TIMEOUT
-                    handler(Bullwinkle.NO_RESPONSE, message, retry);
+                    message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
+                    handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
                     // Delete the message if there wasn't a retry attempt
-                    if (message.type == Bullwinkle.TIMEOUT) {
+                    if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
                         delete __bull._packages[message.id];
                     }
                 });
@@ -392,11 +442,15 @@ class Bullwinkle {
 }
 
 class Bullwinkle.Package {
+
     // The event handlers
     _handlers = null;
 
     // The message we're wrapping
     _message = null;
+
+    // The timestamp of the original message
+    _ts = null;
 
     // Class constructor
     //
@@ -405,6 +459,19 @@ class Bullwinkle.Package {
     constructor(message) {
         _message = message;
         _handlers = {};
+        _ts = _timestamp();
+    }
+
+    // Sets an onSuccess callback that will be invoked if the message is successfully
+    // received from the other side.
+    //
+    // Parameters:
+    //      callback        The onSuccess callback (1 parameter)
+    //
+    // Returns:             this
+    function onSuccess(callback) {
+        _handlers["onSuccess"] <- callback;
+        return this;
     }
 
     // Sets an onReply method that will be called when the message
@@ -423,7 +490,7 @@ class Bullwinkle.Package {
     // be sent, or if there was no handler for the message
     //
     // Parameters:
-    //      callback        The onFail callback (1 parameter)
+    //      callback        The onFail callback (3 parameters)
     //
     // Returns:             this
     function onFail(callback) {
@@ -438,8 +505,34 @@ class Bullwinkle.Package {
     //
     // Returns:             The handler, or null (if it doesn't exist)
     function getHandler(handlerName) {
-        if (!(handlerName in _handlers)) { return null; }
-
-        return _handlers[handlerName];
+        return (handlerName in _handlers) ? _handlers[handlerName] : null;
     }
+
+    // Returns the time since the message was sent
+    //
+    // Parameters:
+    //
+    // Returns:         The time difference in seconds (float) between the packages timestamp and now()
+    function getLatency() {
+        local t0 = split(_ts, ".");
+        local t1 = split(_timestamp(), ".");
+        local diff = (t1[0].tointeger() - t0[0].tointeger()) + (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+        return math.fabs(diff);
+    }
+
+    // Returns the time in a string format that can be used for calculating latency
+    //
+    // Parameters:
+    //
+    // Returns:             The time in a string format
+    function _timestamp() {
+        if (Bullwinkle._isAgent()) {
+            local d = date();
+            return format("%d.%06d", d.time, d.usec);
+        } else {
+            local d = math.abs(hardware.micros());
+            return format("%d.%06d", d/1000000, d%1000000);
+        }
+    }
+
 }
