@@ -5,6 +5,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
 - [Bullwinkle](#bullwinkle) - The core application - used to add/remove handlers, and send messages.
   - [Bullwinkle.send](#bullwinkle_send) - Sends a message to the partner application.
   - [Bullwinkle.on](#bullwinkle_on) - Adds a message listener for the specified messageName.
+    - [message](#bullwinkle_on_message) - The message table passed into .on handlers.
     - [reply](#bullwinkle_on_reply) - A method passed into .on handlers that is used to reply to the message.
   - [Bullwinkle.remove](#bullwinkle_remove) - Removes a message listener for the specified messageName.
 - [Bullwinkle.Package](#bullwinklepackage) - A packaged message with event handlers.
@@ -62,6 +63,21 @@ bull.on("setLights", function(message, reply) {
     led.write(message.data);
 });
 ```
+
+<div id="bullwinkle_on_message"><h4>message</h4></div>
+
+The *message* parameter is a table that contains some or all of the following keys:
+
+| Key         | Data Type | Description |
+| ------------ | -------------  | --------------- |
+| type        | int              | Bullwinkle message type |
+| tries        | int              | Number of attempts made to deliver the message |
+| name      | string         | Name of the message |
+| id            | int              | ID of the message |
+| ts            | int              | Timestamp when message was created |
+| data        | [serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/) | data passed into the #send method |
+| retry        | table          | A table containing *ts* the timestamp of the latest retry and *sent* a boolean |
+| latency    | float           | Seconds taken to deliver the message |
 
 <div id="bullwinkle_on_reply"><h4>reply(data)</h4></div>
 
