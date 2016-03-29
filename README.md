@@ -14,7 +14,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
   - [Package.onFail](#onfailcallback) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#retrytimeout) - A method passed into .onFail handlers that is used to retry sending the message.
 
-<div id="bullwinkle"><h2>Bullwinkle([options])</h2></div>
+<div id="bullwinkle"><h2>Bullwinkle(<i>[options]</i>)</h2></div>
 
 Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours:
 
@@ -24,14 +24,14 @@ Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An op
 bull <- Bullwinkle();
 ```
 
-**NOTE:** You must `require` and instantiate Bullwinkle in both the agent and device code.
+**Note** You must `require` and instantiate Bullwinkle in both the agent and device code.
 
 <div id="bullwinkle_options"><h4>options</h4></div>
 A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behaviour:
 
-- ```messageTimeout``` - Changes the default timeout required before a message is considered failed.
-- ```retryTimeout``` - Changes the default timeout parameter passed to the [retry](#retry) method.
-- ```maxRetries``` - Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing.
+- *messageTimeout* - Changes the default timeout required before a message is considered failed.
+- *retryTimeout* - Changes the default timeout parameter passed to the [retry](#retry) method.
+- *maxRetries* - Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing.
 
 The default settings are listed below:
 
@@ -43,19 +43,19 @@ The default settings are listed below:
 }
 ```
 
-<div id="bullwinkle_send"><h3>send(messageName, [data])</h3></div>
+<div id="bullwinkle_send"><h3>send(<i>messageName[, data]</i>)</h3></div>
 
-Sends a named message to the partner's Bullwinkle application, and returns a [Bullwinkle.Package](#package). The *data* parameter can be [any serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
+Sends a named message to the partner’s Bullwinkle application, and returns a [Bullwinkle.Package](#package). The *data* parameter can be a basic Squirrel type (`1`, `true`, `"A String"`) or more complex data structures such as an array or table, but it must be [a serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
 
 ```squirrel
 bull.send("setLights", true);   // Turn the lights on
 ```
 
-The send method returns a [Bullwinkle.Package](#package) object that can be used to attach [onFail](#onfailcallback),  [onSuccess](#onsuccesscallback) and [onReply](#onreplycallback) handlers.
+The *send()* method returns a [Bullwinkle.Package](#package) object that can be used to attach [onFail](#onfailcallback),  [onSuccess](#onsuccesscallback) and [onReply](#onreplycallback) handlers.
 
-<div id="bullwinkle_on"><h3>on(messageName, callback)</h3></div>
+<div id="bullwinkle_on"><h3>on(<i>messageName, callback</i>)</h3></div>
 
-Adds a message listener (the *callback*) for the specified *messageName*. The callback method takes two parameters: *message* (the message), and *reply* (a method that can be called to reply to the message).
+Adds a message listener (the *callback*) for the specified *messageName*. The callback method takes two parameters: *message* (the message) and *reply* (a method that can be called to reply to the message).
 
 ```squirrel
 // Get a message, and do something with it
@@ -70,18 +70,18 @@ The *message* parameter is a table that contains some or all of the following ke
 
 | Key         | Data Type | Description |
 | ------------ | -------------  | --------------- |
-| type        | int              | Bullwinkle message type |
-| tries        | int              | Number of attempts made to deliver the message |
-| name      | string         | Name of the message |
-| id            | int              | ID of the message |
-| ts            | int              | Timestamp when message was created |
-| data        | [serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/) | data passed into the #send method |
-| retry        | table          | A table containing *ts* the timestamp of the latest retry and *sent* a boolean |
-| latency    | float           | Seconds taken to deliver the message |
+| *type*        | Integer              | Bullwinkle message type |
+| *tries*        | Integer              | Number of attempts made to deliver the message |
+| *name*      | String         | Name of the message |
+| *id*            | Integer              | ID of the message |
+| *ts*            | Integer              | Timestamp when message was created |
+| *data*        | [Serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/) | data passed into the #send method |
+| *retry*        | Table          | A table containing *ts* the timestamp of the latest retry and *sent* a boolean |
+| *latency*    | Float           | Seconds taken to deliver the message |
 
-<div id="bullwinkle_on_reply"><h4>reply(data)</h4></div>
+<div id="bullwinkle_on_reply"><h4>reply(<i>data</i>)</h4></div>
 
-The second parameter, *reply*, is a method that can be invoked to reply to the message caught by the .on handler. The reply method takes a parameter - *data* - representing the information we want to pass back to the partner. The *data* parameter can be [any serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
+The second parameter, *reply*, is a method that can be invoked to reply to the message caught by the .on handler. The reply method takes a parameter, *data*, representing the information we want to pass back to the partner. The *data* parameter can be [any serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
 
 ```squirrel
 // Get a message, and respond to it
@@ -94,22 +94,21 @@ bull.on("temp", function(message, reply) {
 });
 ```
 
-<div id="bullwinkle_remove"><h3>remove(messageName)</h3></div>
+<div id="bullwinkle_remove"><h3>remove(<i>messageName</i>)</h3></div>
 
-The *remove* method removes a message listener that was added with the [.on](#bullwinkle_on) method.
+The *remove()* method removes a message listener that was added with the [.on](#bullwinkle_on) method.
 
 ```squirrel
-bull.remove("test");     // Don't listen for 'test' messages anymore.
+bull.remove("test");     // Don't listen for 'test' messages any more.
 ```
 
 <div id="package"><h2>Bullwinkle.Package</h2></div>
 
-A Bullwinkle.Package object represents a message that has been sent to the partner, and has event handlers attached to it. Bullwinkle.Package objects should never be manually constructed (the [Bullwinkle.send](#bullwinkle_send) method returns a Bullwinkle.Package object).
+A Bullwinkle.Package object represents a message that has been sent to the partner, and has event handlers attached to it. Bullwinkle.Package objects should never be manually constructed: the [Bullwinkle.send()](#bullwinkle_send) method returns a Bullwinkle.Package object.
 
-<div id="onsuccesscallback"><h3>onSuccess(callback)</h3></div>
+<div id="onsuccesscallback"><h3>onSuccess(<i>callback</i>)</h3></div>
 
-The onSuccess method adds an event listener (the *callback*) that will execute if the partner *.on* handler receives the message.
-The *message* parameter contains the successfully delivered message including a *tries* count and a round-trip *latency* float in seconds.
+The *onSuccess()* method adds an event listener (the *callback*) that will execute if the partner *.on* handler receives the message. The callback’s *message* parameter contains the successfully delivered message, including a *tries* count and a round-trip *latency* float in seconds.
 
 ```squirrel
 bull.send("importantMessage")
@@ -121,9 +120,9 @@ bull.send("importantMessage")
     });
 ```
 
-<div id="onreplycallback"><h3>onReply(callback)</h3></div>
+<div id="onreplycallback"><h3>onReply(<i>callback</i>)</h3></div>
 
-The onReply method adds an event listener (the *callback*) that will execute if the partner *.on* handler replies to the message with the [reply](#bullwinkle_on_reply) method. The callback takes a single parameter, *message*, which contains the message information including a *tries* count and a round-trip *latency* float in seconds.
+The *onReply()* method adds an event listener (the *callback*) that will execute if the partner *.on* handler replies to the message with the [*reply()*](#bullwinkle_on_reply) method. The callback takes a single parameter, *message*, which contains the message information, including a *tries* count and a round-trip *latency* float in seconds.
 
 The following example demonstrates how to get real time sensor information with [Rocky](https://github.com/electricimp/rocky) and Bullwinkle:
 
@@ -155,19 +154,19 @@ tempHumid <- Si702x(i2c);
 
 bull.on("temp", function(message, reply){
     local result = tempHumid.read();
-    reply(result)
+    reply(result);
 });
 ```
 
-<div id="onfailcallback"><h3>onFail(callback)</h3></div>
+<div id="onfailcallback"><h3>onFail(<i>callback</i>)</h3></div>
 
-The onFail method adds an event listener (the *callback*) that will  execute if the partner application does not have a handler for the specified messageName, or if the partner fails to respond within a specified period of time (the [messageTimeout](#bullwinkle_options)). The callback method requires three parameters: *err*, *message*, and *retry*.
+The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.
 
-The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does not have a handler for the specified messageName), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
+The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does not have a handler for the specified message name), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
-The *message* parameter contains the failed message including a *tries* count and a *latency* float in seconds.
+The *message* parameter contains the failed message, including a *tries* count and a *latency* float in seconds.
 
-The *retry* parameter is a method that can be invoked to retry sending the message in a specified period of time. Note, this method must be called synchronously if it is to be called at all. If the *retry* method is not called the message will be expired.
+The *retry* parameter is a method that can be invoked to retry sending the message in a specified period of time. This method must be called synchronously if it is to be called at all. If the *retry()* method is not called the message will be expired.
 
 ```squirrel
 bull.send("importantMessage")
@@ -181,9 +180,9 @@ bull.send("importantMessage")
     });
 ```
 
-<div id="retrytimeout"><h4>retry([timeout])</h4></div>
+<div id="retrytimeout"><h4>retry(<i>[timeout]</i>)</h4></div>
 
-The *retry* method is passed into onFail handler, and can be used to try sending the failed message again after the specified timeout has elapsed. If no timeout is specified, the retry message will use the default [retryTimeout](#bullwinkle_options) setting. If the maximum number of retries have been attempted then this function will return false and no more retries will be attempted, otherwise it will return true. See [onFail](#onfailcallback) for example usage.
+The *retry()* method is passed into onFail handler, and can be used to try sending the failed message again after the specified timeout has elapsed. If no timeout is specified, the retry message will use the default [retryTimeout](#bullwinkle_options) setting. If the maximum number of retries have been attempted then this function will return `false` and no more retries will be attempted, otherwise it will return `true`. See [onFail](#onfailcallback) for example usage.
 
 ## License
 
