@@ -162,7 +162,7 @@ bull.on("temp", function(message, reply){
 
 The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.
 
-The *err* parameter describes the error, and will either be `Bullwinkle.NO_HANDLER` (in the event the partner application does not have a handler for the specified message name), or `Bullwinkle.NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
+The *err* parameter describes the error, and will either be `BULLWINKLE_ERR_NO_HANDLER` (in the event the partner application does not have a handler for the specified message name), or `BULLWINKLE_ERR_NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
 The *message* parameter contains the failed message, including a *tries* count and a *latency* float in seconds.
 
