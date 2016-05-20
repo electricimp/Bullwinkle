@@ -19,7 +19,7 @@ const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
 
 
 class Bullwinkle {
-    static version = [2,2,0];
+    static version = [2,2,1];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
