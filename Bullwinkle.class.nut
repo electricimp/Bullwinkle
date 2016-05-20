@@ -426,16 +426,13 @@ class Bullwinkle {
                 // Build the retry method for onFail
                 local retry = _retryFactory(message);
 
-                // Invoke the onFail handler
-                imp.wakeup(0, function() {
-                    // Invoke the handlers
-                    message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
-                    handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
-                    // Delete the message if there wasn't a retry attempt
-                    if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
-                        delete __bull._packages[message.id];
-                    }
-                });
+                // Invoke the handlers
+                message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
+                handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
+                // Delete the message if there wasn't a retry attempt
+                if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
+                    delete __bull._packages[message.id];
+                }
             }
         }
     }
