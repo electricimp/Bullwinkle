@@ -19,7 +19,7 @@ const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
 
 
 class Bullwinkle {
-    static version = [2,2,0];
+    static version = [2,2,1];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -42,8 +42,8 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"] : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"] : 60,
+            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tointger() : 10,
+            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tointger() : 60,
             "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"] : 0,
         };
 
@@ -426,16 +426,13 @@ class Bullwinkle {
                 // Build the retry method for onFail
                 local retry = _retryFactory(message);
 
-                // Invoke the onFail handler
-                imp.wakeup(0, function() {
-                    // Invoke the handlers
-                    message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
-                    handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
-                    // Delete the message if there wasn't a retry attempt
-                    if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
-                        delete __bull._packages[message.id];
-                    }
-                });
+                // Invoke the handlers
+                message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
+                handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
+                // Delete the message if there wasn't a retry attempt
+                if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
+                    delete __bull._packages[message.id];
+                }
             }
         }
     }
