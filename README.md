@@ -14,33 +14,36 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
   - [Package.onFail](#onfailcallback) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#retrytimeout) - A method passed into .onFail handlers that is used to retry sending the message.
 
+**To add this library to your project, add** `#require "bullwinkle.class.nut:2.2.0"` **to the top of your agent and device code.**
+
 <div id="bullwinkle"><h2>Bullwinkle(<i>[options]</i>)</h2></div>
 
-Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours:
-
-```squirrel
-#require "bullwinkle.class.nut:2.2.0"
-
-bull <- Bullwinkle();
-```
+Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours.
 
 **Note** You must `require` and instantiate Bullwinkle in both the agent and device code.
 
 <div id="bullwinkle_options"><h4>options</h4></div>
 A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behaviour:
 
-- *messageTimeout* - Changes the default timeout required before a message is considered failed.
-- *retryTimeout* - Changes the default timeout parameter passed to the [retry](#retry) method.
-- *maxRetries* - Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing.
+| Key | Data Type | Default Value | Description |
+| ----- | -------------- | ------------------ | --------------- |
+| *messageTimeout* | integer | 10 | Changes the default timeout required before a message is considered failed. |
+| *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retry) method. |
+| *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing. If set to 0 there is no limit to the number of retries. |
 
-The default settings are listed below:
 
 ```squirrel
-{
-    "messageTimeout": 10.0,  // If there is no response from a message in 10 seconds, consider it failed
-    "retryTimeout": 60.0,    // Calling package.retry() with no parameter will retry in 60 seconds
-    "maxRetries": 0          // There is no limit to the number of retries
-}
+// Initialize using default settings
+bull <- Bullwinkle();
+```
+
+```squirrel
+options <- { "messageTimeout": 5,    // If there is no response from a message in 5 seconds, consider it failed
+             "retryTimeout": 30,      // Calling package.retry() with no parameter will retry in 30 seconds
+             "maxRetries": 10         // Limit to the number of retries to 10
+           }
+// Initialize using custom settings
+bull <- Bullwinkle(options);
 ```
 
 <div id="bullwinkle_send"><h3>send(<i>messageName[, data]</i>)</h3></div>
