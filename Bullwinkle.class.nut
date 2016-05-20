@@ -42,8 +42,8 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"] : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"] : 60,
+            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tointger() : 10,
+            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tointger() : 60,
             "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"] : 0,
         };
 
