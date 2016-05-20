@@ -46,6 +46,8 @@ options <- { "messageTimeout": 5,    // If there is no response from a message i
 bull <- Bullwinkle(options);
 ```
 
+## Bullwinkle Methods
+
 <div id="bullwinkle_send"><h3>send(<i>messageName[, data]</i>)</h3></div>
 
 Sends a named message to the partner’s Bullwinkle application, and returns a [Bullwinkle.Package](#package). The *data* parameter can be a basic Squirrel type (`1`, `true`, `"A String"`) or more complex data structures such as an array or table, but it must be [a serializable Squirrel value](https://electricimp.com/docs/resources/serialisablesquirrel/).
