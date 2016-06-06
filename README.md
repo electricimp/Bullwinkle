@@ -30,7 +30,7 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 | *messageTimeout* | integer | 10 | Changes the default timeout required before a message is considered failed. |
 | *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retry) method. |
 | *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing. If set to 0 there is no limit to the number of retries. |
-| *autoRetry* | boolean | false | If set to true, will automatically continue to [retry](#retry) sending a message until *maxRetries* has been reached, even if no [onFail](#onfailcallback) is supplied. Please note if *maxReties* is set to 0 *autoRetry* will have no limit to the number of times it will retry. |
+| *autoRetry* | boolean | false | If set to true, will automatically continue to [retry](#retry) sending a message until *maxRetries* has been reached, even if no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0 *autoRetry* will have no limit to the number of times it will retry. |
 
 
 ```squirrel
@@ -42,7 +42,7 @@ bull <- Bullwinkle();
 options <- { "messageTimeout": 5,    // If there is no response from a message in 5 seconds, consider it failed
              "retryTimeout": 30,     // Calling package.retry() with no parameter will retry in 30 seconds
              "maxRetries": 10,       // Limit to the number of retries to 10
-             "autoRetry": true        // Automatically retry 10 times
+             "autoRetry": true       // Automatically retry 10 times
            }
 // Initialize using custom settings
 bull <- Bullwinkle(options);
@@ -167,7 +167,7 @@ bull.on("temp", function(message, reply){
 
 <div id="onfailcallback"><h3>onFail(<i>callback</i>)</h3></div>
 
-The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.
+The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.  If *onFail()* is used the *autoRetry* setting will not be envoked.  To resend the message you must use the *retry* callback parameter.
 
 The *err* parameter describes the error, and will either be `BULLWINKLE_ERR_NO_HANDLER` (in the event the partner application does not have a handler for the specified message name), or `BULLWINKLE_ERR_NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
