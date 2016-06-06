@@ -28,9 +28,9 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 | Key | Data Type | Default Value | Description |
 | ----- | -------------- | ------------------ | --------------- |
 | *messageTimeout* | integer | 10 | Changes the default timeout required before a message is considered failed. |
-| *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retry) method. |
-| *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing. If set to 0 there is no limit to the number of retries. |
-| *autoRetry* | boolean | false | If set to true, will automatically continue to [retry](#retry) sending a message until *maxRetries* has been reached when no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0 *autoRetry* will have no limit to the number of times it will retry. |
+| *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retrytimeout) method. |
+| *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retrytimeout) method will function. After this number the [retry](#retrytimeout) method will do nothing. If set to 0 there is no limit to the number of retries. |
+| *autoRetry* | boolean | false | If set to true, will automatically continue to retry sending a message until *maxRetries* has been reached when no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0 *autoRetry* will have no limit to the number of times it will retry. |
 
 
 ```squirrel
