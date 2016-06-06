@@ -1,4 +1,4 @@
-# Bullwinkle Framework v2.2.1
+# Bullwinkle Framework v2.3.0
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
@@ -14,7 +14,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
   - [Package.onFail](#onfailcallback) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#retrytimeout) - A method passed into .onFail handlers that is used to retry sending the message.
 
-**To add this library to your project, add** `#require "bullwinkle.class.nut:2.2.1"` **to the top of your agent and device code.**
+**To add this library to your project, add** `#require "bullwinkle.class.nut:2.3.0"` **to the top of your agent and device code.**
 
 <div id="bullwinkle"><h2>Bullwinkle(<i>[options]</i>)</h2></div>
 
@@ -30,6 +30,7 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 | *messageTimeout* | integer | 10 | Changes the default timeout required before a message is considered failed. |
 | *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retry) method. |
 | *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing. If set to 0 there is no limit to the number of retries. |
+| *autoRetry* | boolean | false | If set to true *autoRetry* will automatically [retry](#retry) sending a message, even if no [onFail](#onfailcallback) is supplied.  *autoRetry* will continue retring until the *maxRetries* has been reached.  Please note if *maxReties* is set to 0 *autoRetry* will have no limit to the number of times it will retry. |
 
 
 ```squirrel
@@ -39,8 +40,9 @@ bull <- Bullwinkle();
 
 ```squirrel
 options <- { "messageTimeout": 5,    // If there is no response from a message in 5 seconds, consider it failed
-             "retryTimeout": 30,      // Calling package.retry() with no parameter will retry in 30 seconds
-             "maxRetries": 10         // Limit to the number of retries to 10
+             "retryTimeout": 30,     // Calling package.retry() with no parameter will retry in 30 seconds
+             "maxRetries": 10,       // Limit to the number of retries to 10
+             "autoRetry": true        // Automatically retry 10 times
            }
 // Initialize using custom settings
 bull <- Bullwinkle(options);
@@ -134,7 +136,7 @@ The following example demonstrates how to get real time sensor information with 
 ```squirrel
 // Agent Code
 #require "Rocky.class.nut:1.2.3"
-#require "Bullwinkle.class.nut:2.2.1"
+#require "Bullwinkle.class.nut:2.3.0"
 
 app <- Rocky();
 bull <- Bullwinkle();
@@ -149,7 +151,7 @@ app.get("/data", function(context) {
 ```squirrel
 // Device Code
 #require "Si702x.class.nut:1.0.0"
-#require "Bullwinkle.class.nut:2.2.1"
+#require "Bullwinkle.class.nut:2.3.0"
 
 bull <- Bullwinkle();
 

@@ -19,7 +19,7 @@ const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
 
 
 class Bullwinkle {
-    static version = [2,2,1];
+    static version = [2,3,0];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -299,10 +299,10 @@ class Bullwinkle {
         // Grab the handler
         local __bull = this;
         local handler = _packages[message.id].getHandler("onFail");
-        
+
         // Build the retry method for onFail
         local retry = _retryFactory(message);
-        
+
         // If we don't have a handler, delete the package (we're done)
         if (handler == null) {
             //server.error("Received NACK from Bullwinkle.send(\"" + message.name + "\", ...)");
