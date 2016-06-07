@@ -1,4 +1,4 @@
-# Bullwinkle Framework v2.3.0
+# Bullwinkle Framework 2.3.0
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
