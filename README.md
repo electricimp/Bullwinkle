@@ -22,10 +22,11 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
 
 <div id="bullwinkle"><h3>Constructor: Bullwinkle(<i>[options]</i>)</h3></div>
 
-Calling the Bullwinkle constructor creates a new Bullwiunkle application. An optional *options* table can be passed into the constructor to override default behaviours.
+Calling the Bullwinkle constructor creates a new Bullwinkle application. An optional *options* table can be passed into the constructor to override default behaviors.
 
 <div id="bullwinkle_options"><h4>options</h4></div>
-A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behaviour:
+
+A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behavior:
 
 | Key | Data Type | Default Value | Description |
 | ----- | -------------- | ------------------ | --------------- |
@@ -34,6 +35,7 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 | *maxRetries* | Integer | 0 | Changes the default number of times the [retry](#retrytimeout) method will function. After this number the [retry](#retrytimeout) method will do nothing. If set to 0 there is no limit to the number of retries. |
 | *autoRetry* | Boolean | `false` | If set to `true`, Bullwinkle will automatically continue to retry sending a message until *maxRetries* has been reached when no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0, *autoRetry* will have no limit to the number of times it will retry. |
 
+#### Examples
 
 ```squirrel
 // Initialize using default settings
@@ -41,10 +43,12 @@ bull <- Bullwinkle();
 ```
 
 ```squirrel
-options <- { "messageTimeout": 5,    // If there is no response from a message in 5 seconds, consider it failed
-             "retryTimeout": 30,     // Calling package.retry() with no parameter will retry in 30 seconds
-             "maxRetries": 10,       // Limit to the number of retries to 10
-             "autoRetry": true       // Automatically retry 10 times
+options <- { "messageTimeout": 5,   // If there is no response from a message in 5 seconds,
+                                    // consider it failed
+             "retryTimeout": 30,    // Calling package.retry() with no parameter will retry 
+                                    // in 30 seconds
+             "maxRetries": 10,      // Limit to the number of retries to 10
+             "autoRetry": true      // Automatically retry 10 times
            }
 // Initialize using custom settings
 bull <- Bullwinkle(options);
