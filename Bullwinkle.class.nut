@@ -19,7 +19,7 @@ const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
 
 
 class Bullwinkle {
-    static version = [2,2,1];
+    static version = [2,3,0];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -42,9 +42,10 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tointger() : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tointger() : 60,
-            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"] : 0,
+            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
+            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
+            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
+            "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
         };
 
         // Initialize out message handlers
@@ -299,15 +300,21 @@ class Bullwinkle {
         local __bull = this;
         local handler = _packages[message.id].getHandler("onFail");
 
-        // If we don't have a handler, delete the package (we're done)
-        if (handler == null) {
-            server.error("Received NACK from Bullwinkle.send(\"" + message.name + "\", ...)");
-            delete _packages[message.id];
-            return;
-        }
-
         // Build the retry method for onFail
         local retry = _retryFactory(message);
+
+        // If we don't have a handler, delete the package (we're done)
+        if (handler == null) {
+            //server.error("Received NACK from Bullwinkle.send(\"" + message.name + "\", ...)");
+            if (_settings["autoRetry"]) { // if autoRetry is set true
+            	if (!retry(_settings["retryTimeout"])) { // when the number of retry is equal to maxRetries
+            		server.log("done retrying");
+            	}
+            } else {
+            	delete _packages[message.id];
+            }
+            return;
+        }
 
         // Invoke the handler and delete the package when done
         imp.wakeup(0, function() {

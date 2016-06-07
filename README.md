@@ -1,4 +1,4 @@
-# Bullwinkle Framework v2.2.1
+# Bullwinkle Framework 2.3.0
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
@@ -14,23 +14,28 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
   - [Package.onFail](#onfailcallback) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#retrytimeout) - A method passed into .onFail handlers that is used to retry sending the message.
 
-**To add this library to your project, add** `#require "bullwinkle.class.nut:2.2.1"` **to the top of your agent and device code.**
+**To add this library to your project, add** `#require "bullwinkle.class.nut:2.3.0"` **to the top of your agent and device code.**
 
-<div id="bullwinkle"><h2>Bullwinkle(<i>[options]</i>)</h2></div>
+**Note** You must `#require` and instantiate Bullwinkle in **both** the agent and device code.
 
-Calling the Bullwinkle constructor creates a new Bullwiunkle application.  An optional *options* table can be passed into the constructor to override default behaviours.
+## Bullwinkle Usage ##
 
-**Note** You must `require` and instantiate Bullwinkle in both the agent and device code.
+<div id="bullwinkle"><h3>Constructor: Bullwinkle(<i>[options]</i>)</h3></div>
+
+Calling the Bullwinkle constructor creates a new Bullwinkle application. An optional *options* table can be passed into the constructor to override default behaviors.
 
 <div id="bullwinkle_options"><h4>options</h4></div>
-A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behaviour:
+
+A table containing any of the following keys may be passed into the Bullwinkle constructor to modify the default behavior:
 
 | Key | Data Type | Default Value | Description |
 | ----- | -------------- | ------------------ | --------------- |
-| *messageTimeout* | integer | 10 | Changes the default timeout required before a message is considered failed. |
-| *retryTimeout* | integer | 60 | Changes the default timeout parameter passed to the [retry](#retry) method. |
-| *maxRetries* | integer | 0 | Changes the default number of times the [retry](#retry) method will function. After this number the [retry](#retry) method will do nothing. If set to 0 there is no limit to the number of retries. |
+| *messageTimeout* | Integer | 10 | Changes the default timeout required before a message is considered failed. |
+| *retryTimeout* | Integer | 60 | Changes the default timeout parameter passed to the [retry](#retrytimeout) method. |
+| *maxRetries* | Integer | 0 | Changes the default number of times the [retry](#retrytimeout) method will function. After this number the [retry](#retrytimeout) method will do nothing. If set to 0 there is no limit to the number of retries. |
+| *autoRetry* | Boolean | `false` | If set to `true`, Bullwinkle will automatically continue to retry sending a message until *maxRetries* has been reached when no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0, *autoRetry* will have no limit to the number of times it will retry. |
 
+#### Examples
 
 ```squirrel
 // Initialize using default settings
@@ -38,9 +43,12 @@ bull <- Bullwinkle();
 ```
 
 ```squirrel
-options <- { "messageTimeout": 5,    // If there is no response from a message in 5 seconds, consider it failed
-             "retryTimeout": 30,      // Calling package.retry() with no parameter will retry in 30 seconds
-             "maxRetries": 10         // Limit to the number of retries to 10
+options <- { "messageTimeout": 5,   // If there is no response from a message in 5 seconds,
+                                    // consider it failed
+             "retryTimeout": 30,    // Calling package.retry() with no parameter will retry 
+                                    // in 30 seconds
+             "maxRetries": 10,      // Limit to the number of retries to 10
+             "autoRetry": true      // Automatically retry 10 times
            }
 // Initialize using custom settings
 bull <- Bullwinkle(options);
@@ -134,7 +142,7 @@ The following example demonstrates how to get real time sensor information with 
 ```squirrel
 // Agent Code
 #require "Rocky.class.nut:1.2.3"
-#require "Bullwinkle.class.nut:2.2.1"
+#require "Bullwinkle.class.nut:2.3.0"
 
 app <- Rocky();
 bull <- Bullwinkle();
@@ -149,7 +157,7 @@ app.get("/data", function(context) {
 ```squirrel
 // Device Code
 #require "Si702x.class.nut:1.0.0"
-#require "Bullwinkle.class.nut:2.2.1"
+#require "Bullwinkle.class.nut:2.3.0"
 
 bull <- Bullwinkle();
 
@@ -165,7 +173,7 @@ bull.on("temp", function(message, reply){
 
 <div id="onfailcallback"><h3>onFail(<i>callback</i>)</h3></div>
 
-The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.
+The *onFail()* method adds an event listener (the *callback*) that will execute if the partner application does not have a handler for the specified message name, or if the partner fails to respond within a specified period of time (the [*messageTimeout*](#bullwinkle_options)). The callback method requires three parameters: *err*, *message* and *retry*.  If *onFail()* is used the *autoRetry* setting will not be envoked.  To resend the message you must use the *retry* callback parameter.
 
 The *err* parameter describes the error, and will either be `BULLWINKLE_ERR_NO_HANDLER` (in the event the partner application does not have a handler for the specified message name), or `BULLWINKLE_ERR_NO_RESPONSE` (in the event the partner application fails to respond in the specified timeout period).
 
