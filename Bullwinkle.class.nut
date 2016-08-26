@@ -223,8 +223,8 @@ class Bullwinkle {
         local reply = _replyFactory(message);
 
         // Invoke the handler
-        local timerError = imp.wakeup(0, function() { handler(message, reply); });
-        if (timerError == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+        local timer = imp.wakeup(0, function() { handler(message, reply); });
+        if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
     }
 
     // Processes a REPLY messages
@@ -452,7 +452,7 @@ class Bullwinkle {
         // If packages still pending schedule next run
         if ( _packages.len() > 0 ) {
             _watchdogTimer = imp.wakeup(0.5, _watchdog.bindenv(this));
-            if (watchdogTimer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+            if (_watchdogTimer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
         } else {
             _watchdogTimer = null;
         }
