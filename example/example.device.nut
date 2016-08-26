@@ -1,4 +1,4 @@
-#require "Bullwinkle.class.nut:2.3.0"
+#require "Bullwinkle.class.nut:2.3.1"
 #require "Si702x.class.nut:1.0.0"
 
 // Create the bullwinkle application
