@@ -1,4 +1,4 @@
-# Bullwinkle Framework 2.3.0
+# Bullwinkle Framework 2.3.1
 
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
@@ -14,7 +14,7 @@ Bullwinkle is an easy to use framework for asynchronous agent and device communi
   - [Package.onFail](#onfailcallback) - Adds an onFail handler that will be invoked if the send failed.
     - [retry](#retrytimeout) - A method passed into .onFail handlers that is used to retry sending the message.
 
-**To add this library to your project, add** `#require "bullwinkle.class.nut:2.3.0"` **to the top of your agent and device code.**
+**To add this library to your project, add** `#require "bullwinkle.class.nut:2.3.1"` **to the top of your agent and device code.**
 
 **Note** You must `#require` and instantiate Bullwinkle in **both** the agent and device code.
 
@@ -45,7 +45,7 @@ bull <- Bullwinkle();
 ```squirrel
 options <- { "messageTimeout": 5,   // If there is no response from a message in 5 seconds,
                                     // consider it failed
-             "retryTimeout": 30,    // Calling package.retry() with no parameter will retry 
+             "retryTimeout": 30,    // Calling package.retry() with no parameter will retry
                                     // in 30 seconds
              "maxRetries": 10,      // Limit to the number of retries to 10
              "autoRetry": true      // Automatically retry 10 times
@@ -142,7 +142,7 @@ The following example demonstrates how to get real time sensor information with 
 ```squirrel
 // Agent Code
 #require "Rocky.class.nut:1.2.3"
-#require "Bullwinkle.class.nut:2.3.0"
+#require "Bullwinkle.class.nut:2.3.1"
 
 app <- Rocky();
 bull <- Bullwinkle();
@@ -157,7 +157,7 @@ app.get("/data", function(context) {
 ```squirrel
 // Device Code
 #require "Si702x.class.nut:1.0.0"
-#require "Bullwinkle.class.nut:2.3.0"
+#require "Bullwinkle.class.nut:2.3.1"
 
 bull <- Bullwinkle();
 

@@ -20,7 +20,7 @@ const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers"
 
 
 class Bullwinkle {
-    static version = [2,3,0];
+    static version = [2,3,1];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
