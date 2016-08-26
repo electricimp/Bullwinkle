@@ -16,6 +16,7 @@ enum BULLWINKLE_MESSAGE_TYPE {
 // Error messages
 const BULLWINKLE_ERR_NO_HANDLER = "No handler for Bullwinkle message";
 const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
+const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers"
 
 
 class Bullwinkle {
@@ -39,6 +40,8 @@ class Bullwinkle {
     // Bullwinkle Settings
     _settings = null;
 
+    _watchdogTimer = null;
+
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
@@ -60,9 +63,6 @@ class Bullwinkle {
         // Setup the agent/device.on handler
         _partner = _isAgent() ? device : agent;
         _partner.on(BULLWINKLE, _onReceive.bindenv(this));
-
-        // Start the watchdog (since imp.wakeups are limited, we only use 1)
-        _watchdog();
     }
 
     // Adds a message handler to the Bullwinkle instance
@@ -156,6 +156,9 @@ class Bullwinkle {
     //
     // Returns:             nothing
     function _sendMessage(message) {
+        // Start the watchdog if not already running
+        if (_watchdogTimer == null) _watchdog();
+
         // Increment the tries
         if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND) {
         	message.tries++;
@@ -220,7 +223,8 @@ class Bullwinkle {
         local reply = _replyFactory(message);
 
         // Invoke the handler
-        imp.wakeup(0, function() { handler(message, reply); });
+        local timerError = imp.wakeup(0, function() { handler(message, reply); });
+        if (timerError == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
     }
 
     // Processes a REPLY messages
@@ -242,11 +246,14 @@ class Bullwinkle {
         if (handler != null) {
 
             // Invoke the handler and delete the package when done
-            imp.wakeup(0, function() {
+            local timer = imp.wakeup(0, function() {
                 delete __bull._packages[message.id];
                 message.latency <- latency;
                 handler(message);
             });
+
+            if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+
         } else {
             // If we don't have a handler, delete the package (we're done)
             delete _packages[message.id];
@@ -271,10 +278,11 @@ class Bullwinkle {
         if (handler != null) {
 
             // Invoke the handler
-            imp.wakeup(0, function() {
+            local timer = imp.wakeup(0, function() {
                 message.latency <- latency;
                 handler(message);
             });
+            if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
         }
 
         // Check if there's a reply handler
@@ -317,7 +325,7 @@ class Bullwinkle {
         }
 
         // Invoke the handler and delete the package when done
-        imp.wakeup(0, function() {
+        local timer = imp.wakeup(0, function() {
             handler(BULLWINKLE_ERR_NO_HANDLER, message, retry);
 
             // Delete the message if the dev didn't retry
@@ -325,6 +333,7 @@ class Bullwinkle {
             	delete __bull._packages[message.id];
             }
         });
+        if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
     }
 
     // Create a reply method for a .on handler
@@ -354,18 +363,18 @@ class Bullwinkle {
 
         	// Check the message is still valid
             if (!(message.id in _packages)) {
-        		// server.error(format("Bullwinkle message id=%d has expired", message.id))
-				message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-        		return false;
-	        }
+        	       // server.error(format("Bullwinkle message id=%d has expired", message.id))
+	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+        	       return false;
+	}
 
-	        // Check there are more retries available
-			if (_settings.maxRetries > 0 && message.tries >= _settings.maxRetries) {
-        		// server.error(format("Bullwinkle message id=%d has no more retries", message.id))
-				message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-				delete _packages[message.id];
-        		return false;
-			}
+	// Check there are more retries available
+	if (_settings.maxRetries > 0 && message.tries >= _settings.maxRetries) {
+        	       // server.error(format("Bullwinkle message id=%d has no more retries", message.id))
+	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+	       delete _packages[message.id];
+        	       return false;
+	}
 
             // Set timeout if required
             if (timeout == null) { timeout = _settings.retryTimeout; }
@@ -391,9 +400,6 @@ class Bullwinkle {
     // imp.wakeup. _watchdog is responsible for sending retries and handling
     // message timeouts.
     function _watchdog() {
-        // Schedule next run
-        imp.wakeup(0.5, _watchdog.bindenv(this));
-
         // Get the current time
         local t = time();
 
@@ -441,6 +447,14 @@ class Bullwinkle {
                     delete __bull._packages[message.id];
                 }
             }
+        }
+
+        // If packages still pending schedule next run
+        if ( _packages.len() > 0 ) {
+            _watchdogTimer = imp.wakeup(0.5, _watchdog.bindenv(this));
+            if (watchdogTimer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+        } else {
+            _watchdogTimer = null;
         }
     }
 }
