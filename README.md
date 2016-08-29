@@ -34,6 +34,7 @@ A table containing any of the following keys may be passed into the Bullwinkle c
 | *retryTimeout* | Integer | 60 | Changes the default timeout parameter passed to the [retry](#retrytimeout) method. |
 | *maxRetries* | Integer | 0 | Changes the default number of times the [retry](#retrytimeout) method will function. After this number the [retry](#retrytimeout) method will do nothing. If set to 0 there is no limit to the number of retries. |
 | *autoRetry* | Boolean | `false` | If set to `true`, Bullwinkle will automatically continue to retry sending a message until *maxRetries* has been reached when no [onFail](#onfailcallback) is supplied. Please note if *maxRetries* is set to 0, *autoRetry* will have no limit to the number of times it will retry. |
+| *onError* | function | null | Callback to be executed if a low level error is encountered.  Currently it is called when too many timers have been created. |
 
 #### Examples
 
