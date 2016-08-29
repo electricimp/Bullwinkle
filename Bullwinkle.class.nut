@@ -16,7 +16,8 @@ enum BULLWINKLE_MESSAGE_TYPE {
 // Error messages
 const BULLWINKLE_ERR_NO_HANDLER = "No handler for Bullwinkle message";
 const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
-const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers"
+const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers";
+const BULLWINKLE_WATCHDOG_TIMER = 0.5;
 
 
 class Bullwinkle {
@@ -49,6 +50,7 @@ class Bullwinkle {
             "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
             "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
             "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
+            "onError" : ("onError" in settings) ? settings["onError"] : null
         };
 
         // Initialize out message handlers
@@ -224,7 +226,7 @@ class Bullwinkle {
 
         // Invoke the handler
         local timer = imp.wakeup(0, function() { handler(message, reply); });
-        if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+        _checkTimer(timer);
     }
 
     // Processes a REPLY messages
@@ -251,8 +253,7 @@ class Bullwinkle {
                 message.latency <- latency;
                 handler(message);
             });
-
-            if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+            _checkTimer(timer);
 
         } else {
             // If we don't have a handler, delete the package (we're done)
@@ -282,7 +283,7 @@ class Bullwinkle {
                 message.latency <- latency;
                 handler(message);
             });
-            if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+            _checkTimer(timer);
         }
 
         // Check if there's a reply handler
@@ -333,7 +334,7 @@ class Bullwinkle {
             	delete __bull._packages[message.id];
             }
         });
-        if (timer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+        _checkTimer(timer);
     }
 
     // Create a reply method for a .on handler
@@ -396,6 +397,18 @@ class Bullwinkle {
         }.bindenv(this);
     };
 
+    // checks that TIMER was set, calles onError callback if needed
+    //
+    // Parameters:
+    //      timer         The value returned by calling imp.wakeup
+    //
+    // Returns:             nothing
+    function _checkTimer(timer) {
+        if (timer == null && "onError" in _settings) {
+            _settings.onError(BULLWINKLE_ERR_TOO_MANY_TIMERS);
+        }
+    }
+
     // The _watchdog function brings all timer functionality into a single
     // imp.wakeup. _watchdog is responsible for sending retries and handling
     // message timeouts.
@@ -451,8 +464,8 @@ class Bullwinkle {
 
         // If packages still pending schedule next run
         if ( _packages.len() > 0 ) {
-            _watchdogTimer = imp.wakeup(0.5, _watchdog.bindenv(this));
-            if (_watchdogTimer == null) { server.error(BULLWINKLE_ERR_TOO_MANY_TIMERS); }
+            _watchdogTimer = imp.wakeup(BULLWINKLE_WATCHDOG_TIMER, _watchdog.bindenv(this));
+            _checkTimer(_watchdogTimer);
         } else {
             _watchdogTimer = null;
         }
