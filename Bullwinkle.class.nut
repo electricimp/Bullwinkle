@@ -50,7 +50,6 @@ class Bullwinkle {
             "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
             "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
             "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
-            "prependID" : ("prependID" in settings) ? settings["prependID"].tostring() + "|" : ""
             "onError" : ("onError" in settings) ? settings["onError"] : null
         };
 
@@ -124,7 +123,7 @@ class Bullwinkle {
     function _generateId() {
         // Get the next ID
         while (++_nextId in _packages) {
-            _nextId = _settings.prependID + ((_nextId + 1) % RAND_MAX);
+            _nextId = (_nextId + 1) % RAND_MAX;
         }
 
         // Return the generated ID
