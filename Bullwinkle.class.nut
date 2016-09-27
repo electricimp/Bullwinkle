@@ -167,8 +167,11 @@ class Bullwinkle {
 		        _packages[message.id]._tries++;
         }
 
-        // Send the message
-        _partner.send(BULLWINKLE, message);
+        if(server.isconnected()) // Send the message
+          _partner.send(BULLWINKLE, message);
+        else if(message.id in _packages)  //run the timeout flow (if the package exists)
+          _packageTimeout(_packages[message.id])
+
     }
 
     // Sends a response (ACK, NACK, REPLY) to a message
@@ -399,6 +402,37 @@ class Bullwinkle {
         }.bindenv(this);
     };
 
+    // Call the onFail handler when a timeout occurs
+    //
+    // Parameters:
+    //      package         The Bullwinkle.Package that has timed out
+    //
+    function _packageTimeout(package){
+        // Grab the onFail handler
+        local handler = package.getHandler("onFail");
+
+        // If the handler doesn't exists
+        if (handler == null) {
+            // Delete the package, and move to next package
+            delete _packages[message.id];
+            continue;
+        }
+
+        // Grab a reference to this
+        local __bull = this;
+
+        // Build the retry method for onFail
+        local retry = _retryFactory(message);
+
+        // Invoke the handlers
+        message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
+        handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
+        // Delete the message if there wasn't a retry attempt
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
+            delete __bull._packages[message.id];
+        }
+    }
+
     // checks that TIMER was set, calles onError callback if needed
     //
     // Parameters:
@@ -438,29 +472,7 @@ class Bullwinkle {
             // if it's a message awaiting a reply
             local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
             if (t >= (ts + _settings.messageTimeout)) {
-                // Grab the onFail handler
-                local handler = package.getHandler("onFail");
-
-                // If the handler doesn't exists
-                if (handler == null) {
-                    // Delete the package, and move to next package
-                    delete _packages[message.id];
-                    continue;
-                }
-
-                // Grab a reference to this
-                local __bull = this;
-
-                // Build the retry method for onFail
-                local retry = _retryFactory(message);
-
-                // Invoke the handlers
-                message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
-                handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
-                // Delete the message if there wasn't a retry attempt
-                if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
-                    delete __bull._packages[message.id];
-                }
+                _packageTimeout(package)
             }
         }
 
