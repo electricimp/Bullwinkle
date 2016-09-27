@@ -149,7 +149,6 @@ class Bullwinkle {
             "name": command,
             "data": data,
             "ts": ts,
-            "tries": 0,
         };
     }
 
@@ -164,9 +163,10 @@ class Bullwinkle {
         if (_watchdogTimer == null) _watchdog();
 
         // Increment the tries
-        if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND) {
-        	message.tries++;
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND && message.id in _packages) {
+		        _packages[message.id]._tries++;
         }
+
         // Send the message
         _partner.send(BULLWINKLE, message);
     }
@@ -367,17 +367,17 @@ class Bullwinkle {
         	// Check the message is still valid
             if (!(message.id in _packages)) {
         	       // server.error(format("Bullwinkle message id=%d has expired", message.id))
-	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-        	       return false;
-	}
+          	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+                   return false;
+          	}
 
-	// Check there are more retries available
-	if (_settings.maxRetries > 0 && message.tries >= _settings.maxRetries) {
-        	       // server.error(format("Bullwinkle message id=%d has no more retries", message.id))
-	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-	       delete _packages[message.id];
-        	       return false;
-	}
+          	// Check there are more retries available
+          	if (_settings.maxRetries > 0 && _packages[message.id]._tries >= _settings.maxRetries) {
+                   // server.error(format("Bullwinkle message id=%d has no more retries", message.id))
+          	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+          	       delete _packages[message.id];
+                   return false;
+          	}
 
             // Set timeout if required
             if (timeout == null) { timeout = _settings.retryTimeout; }
@@ -416,7 +416,7 @@ class Bullwinkle {
     // message timeouts.
     function _watchdog() {
         // Get the current time
-        local t = time();
+        local t = Bullwinkle._isAgent() ? time() : hardware.micros()/1000000
 
         // Loop through all the cached packages
         foreach(idx, package in _packages) {
@@ -436,7 +436,7 @@ class Bullwinkle {
             }
 
             // if it's a message awaiting a reply
-            local ts = "retry" in message ? message.retry.ts : split(package._ts, "."); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
+            local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
             if (t >= (ts + _settings.messageTimeout)) {
                 // Grab the onFail handler
                 local handler = package.getHandler("onFail");
@@ -485,6 +485,9 @@ class Bullwinkle.Package {
     // The timestamp of the original message
     _ts = null;
 
+    // the number of attempts we have made to send the message
+    _tries = null;
+
     // Class constructor
     //
     // Parameters:
@@ -493,6 +496,7 @@ class Bullwinkle.Package {
         _message = message;
         _handlers = {};
         _ts = _timestamp();
+        _tries = 0;
     }
 
     // Sets an onSuccess callback that will be invoked if the message is successfully
@@ -567,5 +571,4 @@ class Bullwinkle.Package {
             return format("%d.%06d", d/1000000, d%1000000);
         }
     }
-
 }
