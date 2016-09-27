@@ -96,10 +96,11 @@ class Bullwinkle {
     // Parameters:
     //      name            The message name
     //      data            Optional data
+    //      ts              Optional timestamp for the data
     //
-    // Returns:             Rocky.Package object
-    function send(name, data = null) {
-        local message = _messageFactory(BULLWINKLE_MESSAGE_TYPE.SEND, name, data);
+    // Returns:             Bullwinkle.Package object
+    function send(name, data = null, ts = null) {
+        local message = _messageFactory(BULLWINKLE_MESSAGE_TYPE.SEND, name, data, ts);
         local package = Bullwinkle.Package(message);
         _packages[message.id] <- package;
         _sendMessage(message);
@@ -435,7 +436,7 @@ class Bullwinkle {
             }
 
             // if it's a message awaiting a reply
-            local ts = "retry" in message ? message.retry.ts : message.ts;
+            local ts = "retry" in message ? message.retry.ts : split(package._ts, "."); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
             if (t >= (ts + _settings.messageTimeout)) {
                 // Grab the onFail handler
                 local handler = package.getHandler("onFail");
