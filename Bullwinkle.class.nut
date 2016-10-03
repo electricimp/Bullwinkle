@@ -169,7 +169,9 @@ class Bullwinkle {
         if(server.isconnected()) // Send the message
           _partner.send(BULLWINKLE, message);
         else if(message.id in _packages)  //run the timeout flow (if the package exists)
-          _packageTimeout(_packages[message.id])
+          imp.wakeup(0, function(){ // on the next tick so that the onFail handler can have a chance to register itself
+            _packageTimeout(_packages[message.id])
+          }.bindenv(this))
 
     }
 
@@ -389,7 +391,7 @@ class Bullwinkle {
 
             // Add the retry information
             message.retry <- {
-                "ts": time() + timeout,
+                "ts": ( Bullwinkle._isAgent() ? time() : hardware.micros()/1000000 )  + timeout,
                 "sent": false
             };
 
@@ -406,15 +408,15 @@ class Bullwinkle {
     // Parameters:
     //      package         The Bullwinkle.Package that has timed out
     //
-    function _packageTimeout(package){
+    function _packageTimeout(package) {
         // Grab the onFail handler
         local handler = package.getHandler("onFail");
+        local message = package._message
 
         // If the handler doesn't exists
         if (handler == null) {
             // Delete the package, and move to next package
             delete _packages[message.id];
-            continue;
         }
 
         // Grab a reference to this
