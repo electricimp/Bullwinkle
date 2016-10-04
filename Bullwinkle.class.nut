@@ -9,13 +9,15 @@ enum BULLWINKLE_MESSAGE_TYPE {
     REPLY,
     ACK,
     NACK,
-    TIMEOUT,
+    FAILED,
     DONE
 }
 
 // Error messages
 const BULLWINKLE_ERR_NO_HANDLER = "No handler for Bullwinkle message";
 const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
+const BULLWINKLE_ERR_LOW_MEMORY = "imp running below low memory threshold";
+const BULLWINKLE_ERR_NO_CONNECTION = "server.isconnected() == false"
 const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers";
 const BULLWINKLE_WATCHDOG_TIMER = 0.5;
 
@@ -46,11 +48,12 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
-            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
-            "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
-            "onError" : ("onError" in settings) ? settings["onError"] : null
+            "messageTimeout":     ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
+            "retryTimeout":       ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
+            "maxRetries":         ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
+            "autoRetry" :	        ("autoRetry" in settings) ? settings["autoRetry"] : false,
+            "lowMemoryThreshold": ("lowMemoryThreshold" in settings) ? settings["lowMemoryThreshold"] : 15000,
+            "onError" :           ("onError" in settings) ? settings["onError"] : null
         };
 
         // Initialize out message handlers
@@ -166,13 +169,14 @@ class Bullwinkle {
 		        _packages[message.id]._tries++;
         }
 
-        if(_isAgent() || server.isconnected()) // Send the message
-          _partner.send(BULLWINKLE, message);
-        else if(message.id in _packages)  //run the timeout flow (if the package exists)
-          imp.wakeup(0, function(){ // on the next tick so that the onFail handler can have a chance to register itself
-            _packageTimeout(_packages[message.id])
+        if(imp.getmemoryfree() > _settings.lowMemoryThreshold && (_isAgent() || server.isconnected())){
+          _partner.send(BULLWINKLE, message); // Send the message
+        } else if(message.id in _packages){ //run the failure flow (if the package exists)
+          local reason = imp.getmemoryfree() <= _settings.lowMemoryThreshold ? BULLWINKLE_ERR_LOW_MEMORY : BULLWINKLE_ERR_NO_CONNECTION
+          imp.wakeup(0, function(){ // run on the "next tick" so that the onFail handler can have a chance to register itself
+            _packageFailed(_packages[message.id], reason)
           }.bindenv(this))
-
+        }
     }
 
     // Sends a response (ACK, NACK, REPLY) to a message
@@ -408,7 +412,7 @@ class Bullwinkle {
     // Parameters:
     //      package         The Bullwinkle.Package that has timed out
     //
-    function _packageTimeout(package) {
+    function _packageFailed(package, reason) {
         // Grab the onFail handler
         local handler = package.getHandler("onFail");
         local message = package._message
@@ -426,10 +430,10 @@ class Bullwinkle {
         local retry = _retryFactory(message);
 
         // Invoke the handlers
-        message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
-        handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
+        message.type = BULLWINKLE_MESSAGE_TYPE.FAILED
+        handler(reason, message, retry);
         // Delete the message if there wasn't a retry attempt
-        if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.FAILED) {
             delete __bull._packages[message.id];
         }
     }
@@ -473,7 +477,7 @@ class Bullwinkle {
             // if it's a message awaiting a reply
             local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
             if (t >= (ts + _settings.messageTimeout)) {
-                _packageTimeout(package)
+                _packageFailed(package, BULLWINKLE_ERR_NO_RESPONSE)
             }
         }
 
