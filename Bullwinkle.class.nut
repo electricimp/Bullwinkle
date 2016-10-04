@@ -166,7 +166,7 @@ class Bullwinkle {
 		        _packages[message.id]._tries++;
         }
 
-        if(server.isconnected()) // Send the message
+        if(_isAgent() || server.isconnected()) // Send the message
           _partner.send(BULLWINKLE, message);
         else if(message.id in _packages)  //run the timeout flow (if the package exists)
           imp.wakeup(0, function(){ // on the next tick so that the onFail handler can have a chance to register itself
