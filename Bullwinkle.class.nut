@@ -173,9 +173,11 @@ class Bullwinkle {
           _partner.send(BULLWINKLE, message); // Send the message
         } else if(message.id in _packages){ //run the failure flow (if the package exists)
           local reason = imp.getmemoryfree() <= _settings.lowMemoryThreshold ? BULLWINKLE_ERR_LOW_MEMORY : BULLWINKLE_ERR_NO_CONNECTION
-          imp.wakeup(0, function(){ // run on the "next tick" so that the onFail handler can have a chance to register itself
-            _packageFailed(_packages[message.id], reason)
-          }.bindenv(this))
+
+          local timer = imp.wakeup(0.0, function(){ // run on the "next tick" so that the onFail handler can have a chance to register itself
+              _packageFailed(_packages[message.id], reason)
+          }.bindenv(this));
+          _checkTimer(timer)
         }
     }
 
@@ -438,7 +440,7 @@ class Bullwinkle {
         }
     }
 
-    // checks that TIMER was set, calles onError callback if needed
+    // checks that TIMER was set, calls onError callback if needed
     //
     // Parameters:
     //      timer         The value returned by calling imp.wakeup
