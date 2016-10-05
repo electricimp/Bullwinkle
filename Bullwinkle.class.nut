@@ -9,19 +9,21 @@ enum BULLWINKLE_MESSAGE_TYPE {
     REPLY,
     ACK,
     NACK,
-    TIMEOUT,
+    FAILED,
     DONE
 }
 
 // Error messages
 const BULLWINKLE_ERR_NO_HANDLER = "No handler for Bullwinkle message";
 const BULLWINKLE_ERR_NO_RESPONSE = "No Response from partner";
+const BULLWINKLE_ERR_LOW_MEMORY = "imp running below low memory threshold";
+const BULLWINKLE_ERR_NO_CONNECTION = "server.isconnected() == false"
 const BULLWINKLE_ERR_TOO_MANY_TIMERS = "Too many timers";
 const BULLWINKLE_WATCHDOG_TIMER = 0.5;
 
 
 class Bullwinkle {
-    static version = [2,3,1];
+    static version = [2,3,2];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -46,11 +48,13 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
-            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
-            "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
-            "onError" : ("onError" in settings) ? settings["onError"] : null
+            "messageTimeout":     ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
+            "retryTimeout":       ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
+            "maxRetries":         ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
+            "autoRetry" :	        ("autoRetry" in settings) ? settings["autoRetry"] : false,
+            "lowMemoryThreshold": ("lowMemoryThreshold" in settings) ? settings["lowMemoryThreshold"].tointeger() : 15000,
+            "firstMessageID":     ("firstMessageID" in settings) ? settings["firstMessageID"].tointeger() : 0
+            "onError" :           ("onError" in settings) ? settings["onError"] : null
         };
 
         // Initialize out message handlers
@@ -59,8 +63,8 @@ class Bullwinkle {
         // Initialize list of packages
         _packages = {};
 
-        // Initialize the ID counter
-        _nextId = 0;
+        // Initialize the ID counter (can be set to math.rand() or the last message ID you have in nv to prevent ID collisions with something like impPager)
+        _nextId = settings.firstMessageID;
 
         // Setup the agent/device.on handler
         _partner = _isAgent() ? device : agent;
@@ -95,10 +99,11 @@ class Bullwinkle {
     // Parameters:
     //      name            The message name
     //      data            Optional data
+    //      ts              Optional timestamp for the data
     //
-    // Returns:             Rocky.Package object
-    function send(name, data = null) {
-        local message = _messageFactory(BULLWINKLE_MESSAGE_TYPE.SEND, name, data);
+    // Returns:             Bullwinkle.Package object
+    function send(name, data = null, ts = null) {
+        local message = _messageFactory(BULLWINKLE_MESSAGE_TYPE.SEND, name, data, ts);
         local package = Bullwinkle.Package(message);
         _packages[message.id] <- package;
         _sendMessage(message);
@@ -147,7 +152,6 @@ class Bullwinkle {
             "name": command,
             "data": data,
             "ts": ts,
-            "tries": 0,
         };
     }
 
@@ -162,11 +166,20 @@ class Bullwinkle {
         if (_watchdogTimer == null) _watchdog();
 
         // Increment the tries
-        if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND) {
-        	message.tries++;
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.SEND && message.id in _packages) {
+		        _packages[message.id]._tries++;
         }
-        // Send the message
-        _partner.send(BULLWINKLE, message);
+
+        if(imp.getmemoryfree() > _settings.lowMemoryThreshold && (_isAgent() || server.isconnected())){
+          _partner.send(BULLWINKLE, message); // Send the message
+        } else if(message.id in _packages){ //run the failure flow (if the package exists)
+          local reason = imp.getmemoryfree() <= _settings.lowMemoryThreshold ? BULLWINKLE_ERR_LOW_MEMORY : BULLWINKLE_ERR_NO_CONNECTION
+
+          local timer = imp.wakeup(0.0, function(){ // run on the "next tick" so that the onFail handler can have a chance to register itself
+              _packageFailed(_packages[message.id], reason)
+          }.bindenv(this));
+          _checkTimer(timer)
+        }
     }
 
     // Sends a response (ACK, NACK, REPLY) to a message
@@ -365,17 +378,17 @@ class Bullwinkle {
         	// Check the message is still valid
             if (!(message.id in _packages)) {
         	       // server.error(format("Bullwinkle message id=%d has expired", message.id))
-	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-        	       return false;
-	}
+          	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+                   return false;
+          	}
 
-	// Check there are more retries available
-	if (_settings.maxRetries > 0 && message.tries >= _settings.maxRetries) {
-        	       // server.error(format("Bullwinkle message id=%d has no more retries", message.id))
-	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
-	       delete _packages[message.id];
-        	       return false;
-	}
+          	// Check there are more retries available
+          	if (_settings.maxRetries > 0 && _packages[message.id]._tries >= _settings.maxRetries) {
+                   // server.error(format("Bullwinkle message id=%d has no more retries", message.id))
+          	       message.type = BULLWINKLE_MESSAGE_TYPE.DONE;
+          	       delete _packages[message.id];
+                   return false;
+          	}
 
             // Set timeout if required
             if (timeout == null) { timeout = _settings.retryTimeout; }
@@ -385,7 +398,7 @@ class Bullwinkle {
 
             // Add the retry information
             message.retry <- {
-                "ts": time() + timeout,
+                "ts": ( Bullwinkle._isAgent() ? time() : hardware.micros()/1000000 )  + timeout,
                 "sent": false
             };
 
@@ -397,7 +410,38 @@ class Bullwinkle {
         }.bindenv(this);
     };
 
-    // checks that TIMER was set, calles onError callback if needed
+    // Call the onFail handler when a timeout occurs
+    //
+    // Parameters:
+    //      package         The Bullwinkle.Package that has timed out
+    //
+    function _packageFailed(package, reason) {
+        // Grab the onFail handler
+        local handler = package.getHandler("onFail");
+        local message = package._message
+
+        // If the handler doesn't exists
+        if (handler == null) {
+            // Delete the package, and move to next package
+            delete _packages[message.id];
+        }
+
+        // Grab a reference to this
+        local __bull = this;
+
+        // Build the retry method for onFail
+        local retry = _retryFactory(message);
+
+        // Invoke the handlers
+        message.type = BULLWINKLE_MESSAGE_TYPE.FAILED
+        handler(reason, message, retry);
+        // Delete the message if there wasn't a retry attempt
+        if (message.type == BULLWINKLE_MESSAGE_TYPE.FAILED) {
+            delete __bull._packages[message.id];
+        }
+    }
+
+    // checks that TIMER was set, calls onError callback if needed
     //
     // Parameters:
     //      timer         The value returned by calling imp.wakeup
@@ -414,7 +458,7 @@ class Bullwinkle {
     // message timeouts.
     function _watchdog() {
         // Get the current time
-        local t = time();
+        local t = time()
 
         // Loop through all the cached packages
         foreach(idx, package in _packages) {
@@ -434,31 +478,12 @@ class Bullwinkle {
             }
 
             // if it's a message awaiting a reply
-            local ts = "retry" in message ? message.retry.ts : message.ts;
-            if (t >= (ts + _settings.messageTimeout)) {
-                // Grab the onFail handler
-                local handler = package.getHandler("onFail");
-
-                // If the handler doesn't exists
-                if (handler == null) {
-                    // Delete the package, and move to next package
-                    delete _packages[message.id];
-                    continue;
-                }
-
-                // Grab a reference to this
-                local __bull = this;
-
-                // Build the retry method for onFail
-                local retry = _retryFactory(message);
-
-                // Invoke the handlers
-                message.type = BULLWINKLE_MESSAGE_TYPE.TIMEOUT
-                handler(BULLWINKLE_ERR_NO_RESPONSE, message, retry);
-                // Delete the message if there wasn't a retry attempt
-                if (message.type == BULLWINKLE_MESSAGE_TYPE.TIMEOUT) {
-                    delete __bull._packages[message.id];
-                }
+            local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts time(), but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
+            if (t >= (ts + _settings.messageTimeout) || t == 946684800) { //RTC is invalid, which implies we have no connection and should retry immediately.
+                local timer = imp.wakeup(0.0, function(){
+                    _packageFailed(package, BULLWINKLE_ERR_NO_RESPONSE)
+                }.bindenv(this));
+                _checkTimer(timer)
             }
         }
 
@@ -483,6 +508,9 @@ class Bullwinkle.Package {
     // The timestamp of the original message
     _ts = null;
 
+    // the number of attempts we have made to send the message
+    _tries = null;
+
     // Class constructor
     //
     // Parameters:
@@ -491,6 +519,7 @@ class Bullwinkle.Package {
         _message = message;
         _handlers = {};
         _ts = _timestamp();
+        _tries = 0;
     }
 
     // Sets an onSuccess callback that will be invoked if the message is successfully
@@ -545,10 +574,15 @@ class Bullwinkle.Package {
     //
     // Returns:         The time difference in seconds (float) between the packages timestamp and now()
     function getLatency() {
-        local t0 = split(_ts, ".");
-        local t1 = split(_timestamp(), ".");
-        local diff = (t1[0].tointeger() - t0[0].tointeger()) + (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+      local t0 = split(_ts, ".");
+      local t1 = split(_timestamp(), ".");
+
+      if (Bullwinkle._isAgent()) {
+        local diff = (t1[0].tointeger() - t0[0].tointeger()) + ( (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0);
         return math.fabs(diff);
+      } else {
+        return (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+      }
     }
 
     // Returns the time in a string format that can be used for calculating latency
@@ -561,9 +595,7 @@ class Bullwinkle.Package {
             local d = date();
             return format("%d.%06d", d.time, d.usec);
         } else {
-            local d = math.abs(hardware.micros());
-            return format("%d.%06d", d/1000000, d%1000000);
+            return format("%d.%06d", time(), hardware.micros());  //this can be a bit of an ugly _ts but it allows us to calculate latencies up to 36 minutes long...
         }
     }
-
 }
