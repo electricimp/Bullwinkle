@@ -52,7 +52,8 @@ class Bullwinkle {
             "retryTimeout":       ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
             "maxRetries":         ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
             "autoRetry" :	        ("autoRetry" in settings) ? settings["autoRetry"] : false,
-            "lowMemoryThreshold": ("lowMemoryThreshold" in settings) ? settings["lowMemoryThreshold"] : 15000,
+            "lowMemoryThreshold": ("lowMemoryThreshold" in settings) ? settings["lowMemoryThreshold"].tointeger() : 15000,
+            "firstMessageID":     ("firstMessageID" in settings) ? settings["firstMessageID"].tointeger() : 0
             "onError" :           ("onError" in settings) ? settings["onError"] : null
         };
 
@@ -62,8 +63,8 @@ class Bullwinkle {
         // Initialize list of packages
         _packages = {};
 
-        // Initialize the ID counter
-        _nextId = 0;
+        // Initialize the ID counter (can be set to math.rand() or the last message ID you have in nv to prevent ID collisions with something like impPager)
+        _nextId = settings.firstMessageID;
 
         // Setup the agent/device.on handler
         _partner = _isAgent() ? device : agent;
