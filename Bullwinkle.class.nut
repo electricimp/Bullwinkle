@@ -455,7 +455,7 @@ class Bullwinkle {
     // message timeouts.
     function _watchdog() {
         // Get the current time
-        local t = Bullwinkle._isAgent() ? time() : hardware.micros()/1000000
+        local t = time()
 
         // Loop through all the cached packages
         foreach(idx, package in _packages) {
@@ -475,9 +475,12 @@ class Bullwinkle {
             }
 
             // if it's a message awaiting a reply
-            local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts, but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
-            if (t >= (ts + _settings.messageTimeout)) {
-                _packageFailed(package, BULLWINKLE_ERR_NO_RESPONSE)
+            local ts = "retry" in message ? message.retry.ts : split(package._ts, ".")[0].tointeger(); //Use either the retry ts or the package ts time(), but NOT the message ts so that it can be set for whenever the data was generated, instead of when Bullwinkle attempted to send it
+            if (t >= (ts + _settings.messageTimeout) || t == 946684800) { //RTC is invalid, which implies we have no connection and should retry immediately.
+                local timer = imp.wakeup(0.0, function(){
+                    _packageFailed(package, BULLWINKLE_ERR_NO_RESPONSE)
+                }.bindenv(this));
+                _checkTimer(timer)
             }
         }
 
@@ -568,10 +571,15 @@ class Bullwinkle.Package {
     //
     // Returns:         The time difference in seconds (float) between the packages timestamp and now()
     function getLatency() {
-        local t0 = split(_ts, ".");
-        local t1 = split(_timestamp(), ".");
-        local diff = (t1[0].tointeger() - t0[0].tointeger()) + (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+      local t0 = split(_ts, ".");
+      local t1 = split(_timestamp(), ".");
+
+      if (Bullwinkle._isAgent()) {
+        local diff = (t1[0].tointeger() - t0[0].tointeger()) + ( (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0);
         return math.fabs(diff);
+      } else {
+        return (t1[1].tointeger() - t0[1].tointeger()) / 1000000.0;
+      }
     }
 
     // Returns the time in a string format that can be used for calculating latency
@@ -584,8 +592,7 @@ class Bullwinkle.Package {
             local d = date();
             return format("%d.%06d", d.time, d.usec);
         } else {
-            local d = math.abs(hardware.micros());
-            return format("%d.%06d", d/1000000, d%1000000);
+            return format("%d.%06d", time(), hardware.micros());  //this can be a bit of an ugly _ts but it allows us to calculate latencies up to 36 minutes long...
         }
     }
 }
