@@ -46,11 +46,11 @@ class Bullwinkle {
     constructor(settings = {}) {
         // Initialize settings
         _settings = {
-            "messageTimeout":   ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
-            "retryTimeout":     ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
-            "maxRetries":       ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
-            "autoRetry" :	("autoRetry" in settings) ? settings["autoRetry"] : false,
-            "onError" : ("onError" in settings) ? settings["onError"] : null
+            "messageTimeout" :   ("messageTimeout" in settings) ? settings["messageTimeout"].tostring().tointeger() : 10,
+            "retryTimeout"   :   ("retryTimeout" in settings) ? settings["retryTimeout"].tostring().tointeger() : 60,
+            "maxRetries"     :   ("maxRetries" in settings) ? settings["maxRetries"].tostring().tointeger() : 0,
+            "autoRetry"      :   ("autoRetry" in settings) ? settings["autoRetry"] : false,
+            "onError"        :   ("onError" in settings) ? settings["onError"] : null
         };
 
         // Initialize out message handlers
@@ -404,7 +404,7 @@ class Bullwinkle {
     //
     // Returns:             nothing
     function _checkTimer(timer) {
-        if (timer == null && "onError" in _settings) {
+        if (timer == null && "onError" in _settings && _settings.onError) {
             _settings.onError(BULLWINKLE_ERR_TOO_MANY_TIMERS);
         }
     }
