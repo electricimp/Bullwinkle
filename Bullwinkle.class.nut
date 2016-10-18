@@ -21,7 +21,7 @@ const BULLWINKLE_WATCHDOG_TIMER = 0.5;
 
 
 class Bullwinkle {
-    static version = [2,3,1];
+    static version = [2,3,2];
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
