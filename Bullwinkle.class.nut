@@ -99,7 +99,7 @@ class Bullwinkle {
     // Parameters:
     //      name            The message name
     //      data            Optional data
-    //      ts              Optional timestamp for the data
+    //      ts              Optional timestamp for the data 
     //
     // Returns:             Bullwinkle.Package object
     function send(name, data = null, ts = null) {
@@ -343,7 +343,7 @@ class Bullwinkle {
             handler(BULLWINKLE_ERR_NO_HANDLER, message, retry);
 
             // Delete the message if the dev didn't retry
-            if (message.type == BULLWINKLE_MESSAGE_TYPE.NACK) {
+            if (message.type == BULLWINKLE_MESSAGE_TYPE.NACK && message.id in __bull.packages) {
             	delete __bull._packages[message.id];
             }
         });
