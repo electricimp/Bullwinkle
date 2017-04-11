@@ -21,7 +21,7 @@ const BULLWINKLE_WATCHDOG_TIMER = 0.5;
 
 
 class Bullwinkle {
-    static version = [2,3,2];
+    static VERSION = "2.3.3";
 
     // The bullwinkle message
     static BULLWINKLE = "bullwinkle";
@@ -333,7 +333,7 @@ class Bullwinkle {
             if (message.type == BULLWINKLE_MESSAGE_TYPE.NACK) {
             	delete __bull._packages[message.id];
             }
-        });
+        }.bindenv(this));
         _checkTimer(timer);
     }
 
