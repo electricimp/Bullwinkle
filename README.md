@@ -1,5 +1,7 @@
 # Bullwinkle Framework 2.3.2
 
+**Bullwinkle has been deprecated and will no longer be updated -- please use [MessageManager](https://github.com/electricimp/MessageManager) instead**
+
 Bullwinkle is an easy to use framework for asynchronous agent and device communication. The Bullwinkle library consists of two classes:
 
 - [Bullwinkle](#bullwinkle) - The core application - used to add/remove handlers, and send messages.
